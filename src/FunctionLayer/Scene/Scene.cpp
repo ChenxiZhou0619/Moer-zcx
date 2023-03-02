@@ -46,3 +46,7 @@ std::optional<Intersection> Scene::rayIntersect(const Ray &ray) const {
 std::shared_ptr<Light> Scene::sampleLight(float sample, float *pdf) const {
   return lightDistribution.sample(sample, pdf);
 }
+
+float Scene::pdf(std::shared_ptr<Light> light) const {
+  return lightDistribution.pdf(light);
+}

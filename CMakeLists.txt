@@ -31,6 +31,7 @@ add_executable(Moer
   src/FunctionLayer/Integrator/NormalIntegrator.cpp
   src/FunctionLayer/Integrator/DirectIntegrator.cpp
   src/FunctionLayer/Integrator/WhittedIntegrator.cpp
+  src/FunctionLayer/Integrator/PathIntegrator.cpp
   src/FunctionLayer/Camera/Camera.cpp
   src/FunctionLayer/Camera/Pinhole.cpp
   src/FunctionLayer/Scene/Scene.cpp
@@ -85,6 +86,7 @@ add_custom_command(TARGET Moer POST_BUILD
 
 target_link_libraries(Moer PUBLIC embree3)
 target_link_libraries(Moer PUBLIC tinyobjloader)
+target_link_libraries(Moer PUBLIC tbb)
 
 if(APPLE)
   execute_process(

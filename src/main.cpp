@@ -12,6 +12,7 @@
 #include <fstream>
 #include <regex>
 #include <stdio.h>
+#include <tbb/tbb.h>
 
 #define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
 #define PBWIDTH 60
@@ -39,24 +40,28 @@ int main(int argc, char **argv) {
 
   auto start = std::chrono::system_clock::now();
 
-  for (int y = 0; y < height; ++y) {
-    for (int x = 0; x < width; ++x) {
-      Vector2f NDC{(float)x / width, (float)y / height};
-      Spectrum li(.0f);
-      for (int i = 0; i < spp; ++i) {
-        Ray ray = camera->sampleRayDifferentials(
-            CameraSample{sampler->next2D()}, NDC);
-        li += integrator->li(ray, *scene, sampler);
-      }
-      camera->film->deposit({x, y}, li / spp);
+  int finished = 0;
+  tbb::parallel_for(
+      tbb::blocked_range2d<size_t>(0, width, 0, height),
+      [&](const tbb::blocked_range2d<size_t> &r) {
+        for (int row = r.rows().begin(); row != r.rows().end(); ++row)
+          for (int col = r.cols().begin(); col != r.cols().end(); ++col) {
+            Vector2f NDC{(float)row / width, (float)col / height};
+            Spectrum li(.0f);
+            for (int i = 0; i < spp; ++i) {
+              Ray ray = camera->sampleRayDifferentials(
+                  CameraSample{sampler->next2D()}, NDC);
+              li += integrator->li(ray, *scene, sampler);
+            }
+            camera->film->deposit({row, col}, li / spp);
 
-      int finished = x + y * width;
-      if (finished % 5 == 0) {
-        printProgress((float)finished / (height * width));
-      }
-    }
-  }
-  printProgress(1.f);
+            ++finished;
+            if (finished % 20 == 0) {
+              printProgress((float)finished / (height * width));
+            }
+          }
+      });
+  printProgress(1);
 
   auto end = std::chrono::system_clock::now();
 

@@ -9,6 +9,8 @@ public:
                                     const Vector3f &wo) const override;
   virtual LightSampleResult sample(const Intersection &shadingPoint,
                                    const Vector2f &sample) const override;
+  virtual float pdf(const Ray &ray,
+                    const Intersection &intersection) const override;
 
 public:
   std::shared_ptr<Shape> shape;

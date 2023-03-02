@@ -22,6 +22,9 @@ Parallelogram::Parallelogram(const Json &json) : Shape(json) {
       pMax[dim] = std::max(pMax[dim], vertices[i][dim]);
     }
   }
+
+  //* 计算面积
+  area = .5f * cross(edge0, edge1).length();
 }
 
 bool Parallelogram::rayIntersectShape(const Ray &ray, float *distance,
@@ -80,7 +83,6 @@ void Parallelogram::fillIntersection(float distance, int primID, float u,
 void Parallelogram::uniformSampleOnSurface(Vector2f sample,
                                            Intersection *intersection,
                                            float *pdf) const {
-  const static float area = .5f * cross(edge0, edge1).length();
   *pdf = 1.f / area;
   fillIntersection(.0f /*unused */, 0 /*unused*/, sample[0], sample[1],
                    intersection);

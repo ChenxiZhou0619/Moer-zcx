@@ -9,7 +9,15 @@ public:
 
   EnvironmentLight(const Json &json);
 
-  Spectrum evaluateEmission(const Ray &ray) const override;
+  virtual Spectrum evaluateEmission(const Ray &ray) const override;
+
+  virtual float pdf(const Ray &ray) const override;
+
+  virtual float pdf(const Ray &ray,
+                    const Intersection &its) const override final {
+    // This will not be invoke
+    return .0f;
+  }
 
   virtual LightSampleResult sample(const Intersection &shadingPoint,
                                    const Vector2f &sample) const override;

@@ -62,6 +62,13 @@ Spectrum EnvironmentLight::evaluateEmission(const Ray &ray) const {
       TextureCoord{uv, Vector2f(.0f, .0f), Vector2f(.0f, .0f)});
 }
 
+float EnvironmentLight::pdf(const Ray &ray) const {
+  Vector2f uv = direction2uv(ray.direction);
+  int x = uv[0] * environmentMap->size[0], y = uv[1] * environmentMap->size[1];
+  return energyDistribution.pdf(Vector2i{x, y}) * environmentMap->size[0] *
+         environmentMap->size[1] * INV_PI * INV_PI * .5f / fm::sin(PI * uv[1]);
+}
+
 LightSampleResult EnvironmentLight::sample(const Intersection &shadingPoint,
                                            const Vector2f &sample) const {
   const static float invWidth = 1.f / environmentMap->size[0],

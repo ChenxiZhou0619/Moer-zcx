@@ -1,11 +1,11 @@
 {
   "output" : {
-    "filename" : "cornell.hdr"
+    "filename" : "path-3.hdr"
   },
   "sampler" : {
     "type" : "independent",
-    "xSamples" : 4,
-    "ySamples" : 4
+    "xSamples" : 8,
+    "ySamples" : 8
   },
   "camera" : {
     "type" : "pinhole",
@@ -24,7 +24,7 @@
     }
   },
   "integrator" : {
-    "type" : "whitted"
+    "type" : "path"
   },
   "scene" : {
     "shapes" : [
@@ -45,7 +45,7 @@
         "edge1" : [0, 0, 3],
         "material" : {
           "type" : "matte",
-          "albedo" : [0.8, 0.8, 0.8]
+          "albedo" : [0.5, 0.5, 0.5]
         }
       },
       {
@@ -104,7 +104,7 @@
           "translate" : [0.6, -0.6, 0.3]
         },
         "material" : {
-          "type" : "mirror",
+          "type" : "matte",
           "albedo" : [0.3, 0.3 , 0.3]
         }
       }
@@ -113,15 +113,15 @@
     "lights" : [
       {
         "type" : "areaLight",
-        "energy" : [30, 30, 30],
+        "energy" : [28, 25, 16],
         "shape" : {
           "type" : "parallelogram",
-          "base" : [-0.3, 1.99, -0.3],
+          "base" : [-0.3, 1.99999, -0.3],
           "edge0" : [0.6, 0, 0],
           "edge1" : [0, 0, 0.6],
           "material" : {
             "type" : "matte",
-            "albedo" : [0.5, 0.5, 0.5]
+            "albedo" : [0, 0, 0]
           }
         }
       }

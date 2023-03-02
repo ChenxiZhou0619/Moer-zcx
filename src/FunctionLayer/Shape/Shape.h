@@ -35,6 +35,7 @@ public:
   int geometryID;
   std::shared_ptr<Light> light;
   std::shared_ptr<Material> material;
+  float area; // 如果该shape要被配置为面光源，则必须计算其表面面积
 
 protected:
   Point3f pMin, pMax; // AABB包围盒，构建时初始化

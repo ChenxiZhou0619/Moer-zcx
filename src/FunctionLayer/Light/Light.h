@@ -30,6 +30,8 @@ public:
   virtual LightSampleResult sample(const Intersection &shadingPoint,
                                    const Vector2f &sample) const = 0;
 
+  virtual float pdf(const Ray &ray, const Intersection &intersection) const = 0;
+
 public:
   LightType type;
 };
@@ -49,6 +51,8 @@ public:
   }
 
   virtual Spectrum evaluateEmission(const Ray &ray) const = 0;
+
+  virtual float pdf(const Ray &ray) const = 0;
 
   virtual LightSampleResult sample(const Intersection &shadingPoint,
                                    const Vector2f &sample) const override = 0;

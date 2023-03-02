@@ -17,4 +17,8 @@ public:
     Vector3f wiLocal{-woLocal[0], woLocal[1], -woLocal[2]};
     return {Spectrum(1.f), toWorld(wiLocal), 1.f, BSDFType::Specular};
   }
+
+  virtual float pdf(const Vector3f &wo, const Vector3f &wi) const override {
+    return .0f;
+  }
 };

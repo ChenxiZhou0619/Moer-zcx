@@ -11,6 +11,14 @@ Spectrum AreaLight::evaluateEmission(const Intersection &intersection,
   return energy;
 }
 
+float AreaLight::pdf(const Ray &ray, const Intersection &intersection) const {
+  float pdfdA = 1.f / shape->area;
+  // Convert pdfdA to pdfdw
+  float pdfdw = pdfdA * intersection.distance * intersection.distance /
+                std::abs(dot(intersection.normal, ray.direction));
+  return pdfdw;
+}
+
 LightSampleResult AreaLight::sample(const Intersection &shadingPoint,
                                     const Vector2f &sample) const {
   Intersection sampleResult;

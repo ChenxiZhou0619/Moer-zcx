@@ -9,8 +9,8 @@ public:
 
   virtual Spectrum f(const Vector3f &wo, const Vector3f &wi) const override {
     Vector3f woLocal = toLocal(wo), wiLocal = toLocal(wi);
-    // if (woLocal[1] <= .0f || wiLocal[1] <= .0f)
-    //   return Spectrum(0.f);
+    if (woLocal[1] <= .0f || wiLocal[1] <= .0f)
+      return Spectrum(0.f);
     return albedo * INV_PI * wiLocal[1];
   }
 
@@ -19,6 +19,10 @@ public:
     Vector3f wi = squareToCosineHemisphere(sample);
     float pdf = squareToCosineHemispherePdf(wi);
     return {albedo, toWorld(wi), pdf, BSDFType::Diffuse};
+  }
+
+  virtual float pdf(const Vector3f &wo, const Vector3f &wi) const override {
+    return squareToCosineHemispherePdf(toLocal(wi));
   }
 
 private:

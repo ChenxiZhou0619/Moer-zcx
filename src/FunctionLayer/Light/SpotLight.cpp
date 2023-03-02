@@ -13,6 +13,11 @@ Spectrum SpotLight::evaluateEmission(const Intersection &intersection,
   return Spectrum(.0f);
 }
 
+//! 做MIS的前提是其他采样方法采样到了该光源，而点光源只能由直接采样的方法得到，因此该函数也不会被调用
+float SpotLight::pdf(const Ray &ray, const Intersection &intersection) const {
+  return .0f;
+}
+
 LightSampleResult SpotLight::sample(const Intersection &shadingPoint,
                                     const Vector2f &sample) const {
   Vector3f shadingPoint2sample = position - shadingPoint.position;
