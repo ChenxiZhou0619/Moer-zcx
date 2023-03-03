@@ -1,5 +1,11 @@
 #include "Material.h"
 
+const Medium *Material::getMedium() const {
+  if (medium)
+    return medium.get();
+  return nullptr;
+}
+
 void Material::computeShadingGeometry(const Intersection &intersection,
                                       Vector3f *normal, Vector3f *tangent,
                                       Vector3f *bitangent) const {

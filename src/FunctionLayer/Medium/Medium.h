@@ -1,5 +1,6 @@
 
 #pragma once
+#include "Phase.h"
 #include <CoreLayer/ColorSpace/Spectrum.h>
 #include <CoreLayer/Math/Math.h>
 #include <FunctionLayer/Ray/Ray.h>
@@ -8,30 +9,19 @@
 
 struct MediumIntersection;
 
-struct PhaseSampleResult {
-  Spectrum weight;
-  Vector3f wi;
-  float pdf;
-};
-
-class Phase {
-public:
-  virtual Spectrum f(const Vector3f &wo, const Vector3f &wi) const = 0;
-
-  virtual float pdf(const Vector3f &wo, const Vector3f &wi) const = 0;
-
-  virtual PhaseSampleResult sample(const Vector3f &wo,
-                                   Vector2f sample) const = 0;
-};
-
 class Medium {
 public:
   Medium() = delete;
 
   Medium(const Json &json){};
 
-  virtual Spectrum sample(const Ray &ray, float tmax,
+  virtual Spectrum sample(const Ray &ray, float tmax, Vector2f sample,
                           MediumIntersection *mits) const = 0;
+
+  virtual Spectrum Tr(Point3f origin, Vector3f direction,
+                      float distance) const = 0;
+
+  virtual Spectrum SigmaS(Point3f position) const = 0;
 
 public:
   std::shared_ptr<Phase> phase;

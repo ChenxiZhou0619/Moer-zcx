@@ -22,3 +22,13 @@ inline Vector3f squareToCosineHemisphere(Vector2f sample) {
 inline float squareToCosineHemispherePdf(Vector3f v) {
   return (v[1] > .0f) ? v[1] * INV_PI : .0f;
 }
+
+inline Vector3f squareToUniformSphere(Vector2f sample) {
+  float y = 1 - 2 * sample[0];
+  float r = fm::sqrt(std::max(.0f, 1.f - y * y));
+  float phi = 2 * PI * sample[1];
+  Vector3f dir{r * fm::sin(phi), y, r * fm::cos(phi)};
+  return normalize(dir);
+}
+
+inline float squareToUniformSpherePdf(Vector3f v) { return 0.25f * INV_PI; }

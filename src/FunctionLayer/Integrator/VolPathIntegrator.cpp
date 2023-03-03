@@ -1,26 +1,43 @@
 #include "VolPathIntegrator.h"
 #include <FunctionLayer/Material/Material.h>
 #include <FunctionLayer/Medium/Medium.h>
-
+#include <FunctionLayer/Medium/Phase.h>
 Spectrum VolPathIntegrator::Tr(const Scene &scene, const Ray &_ray) const {
+  int step = 0;
   Spectrum tr(1.f);
   Ray ray(_ray);
   Point3f dest = _ray.at(_ray.tFar);
   do {
+    if (++step > 100)
+      break;
     auto itsOpt = scene.rayIntersect(ray);
     if (itsOpt.has_value()) {
+      if (auto medium = ray.medium; medium)
+        tr *= medium->Tr(ray.origin, ray.direction, itsOpt->distance);
       Intersection its = itsOpt.value();
       auto bsdf = its.shape->material->computeBSDF(its);
       if (!bsdf) {
         ray = Ray(its.position, dest);
+        scatterSurface(ray.direction, its.normal, its.shape->material, &ray);
         continue;
       } else {
         tr *= .0f;
       }
+    } else {
+      if (auto medium = ray.medium; medium)
+        tr *= medium->Tr(ray.origin, ray.direction, ray.tFar);
     }
+
     break;
   } while (1);
   return tr;
+}
+
+void VolPathIntegrator::scatterSurface(Vector3f direction, Vector3f normal,
+                                       std::shared_ptr<Material> material,
+                                       Ray *ray) const {
+  bool towardsInner = dot(direction, normal) < .0f;
+  ray->medium = towardsInner ? material->getMedium() : nullptr;
 }
 
 Spectrum VolPathIntegrator::li(const Ray &_ray, const Scene &scene,
@@ -40,22 +57,33 @@ Spectrum VolPathIntegrator::li(const Ray &_ray, const Scene &scene,
 
     MediumIntersection mits;
     if (auto medium = ray.medium; medium)
-      beta *= medium->sample(ray, tmax, &mits);
+      beta *= medium->sample(ray, tmax, sampler->next2D(), &mits);
+
+    if (beta.isZero())
+      break;
 
     // Sample a medium intersection
     if (mits.valid) {
+      if (step > 4)
+        break;
       const Medium *medium = mits.medium;
       // Sample infiniteLights
       for (auto light : scene.infiniteLights) {
         auto lightSampleResult = light->sample(mits, sampler->next2D());
         Ray shadowRay(mits.position, lightSampleResult.direction, 1e-4f,
                       lightSampleResult.distance);
+        shadowRay.medium = medium;
         Spectrum tr = Tr(scene, shadowRay),
                  f = medium->phase->f(-ray.direction, shadowRay.direction);
         if (!tr.isZero() && !f.isZero()) {
           float pdf = convertPDF(lightSampleResult, mits);
+          float misw = isDeltaPrev
+                           ? 1.f
+                           : powerHeuristic(
+                                 pdf, medium->phase->pdf(-ray.direction,
+                                                         shadowRay.direction));
           Spectrum emission = lightSampleResult.energy;
-          spectrum += beta * f * tr * emission / pdf; // TODO MIS
+          spectrum += beta * misw * f * tr * emission / pdf;
         }
       }
 
@@ -66,12 +94,18 @@ Spectrum VolPathIntegrator::li(const Ray &_ray, const Scene &scene,
         auto lightSampleResult = light->sample(mits, sampler->next2D());
         Ray shadowRay(mits.position, lightSampleResult.direction, 1e-4f,
                       lightSampleResult.distance);
+        shadowRay.medium = medium;
         Spectrum tr = Tr(scene, shadowRay),
                  f = medium->phase->f(-ray.direction, shadowRay.direction);
         if (!tr.isZero() && !f.isZero()) {
           float pdf = convertPDF(lightSampleResult, mits);
+          float misw = isDeltaPrev
+                           ? 1.f
+                           : powerHeuristic(
+                                 pdf, medium->phase->pdf(-ray.direction,
+                                                         shadowRay.direction));
           Spectrum emission = lightSampleResult.energy;
-          spectrum += beta * f * tr * emission / pdf; // TODO MIS
+          spectrum += beta * misw * f * tr * emission / pdf;
         }
       }
 
@@ -83,6 +117,7 @@ Spectrum VolPathIntegrator::li(const Ray &_ray, const Scene &scene,
       if (beta.isZero())
         break;
       ray = Ray(mits.position, phaseSampleResult.wi, 1e-4f, FLT_MAX);
+      ray.medium = medium;
 
       pdfPrev = phaseSampleResult.pdf;
       isDeltaPrev = false;
@@ -103,7 +138,9 @@ Spectrum VolPathIntegrator::li(const Ray &_ray, const Scene &scene,
       auto bsdf = its.shape->material->computeBSDF(its);
 
       if (!bsdf) {
-        ray = Ray(its.position, ray.direction, 1e-4f, FLT_MAX);
+        ray = Ray(its.position + 1e-4f * ray.direction, ray.direction, 1e-4f,
+                  FLT_MAX);
+        scatterSurface(ray.direction, its.normal, its.shape->material, &ray);
         continue;
       }
 
@@ -123,6 +160,8 @@ Spectrum VolPathIntegrator::li(const Ray &_ray, const Scene &scene,
         auto lightSampleResult = light->sample(its, sampler->next2D());
         Ray shadowRay(its.position, lightSampleResult.direction, 1e-4f,
                       lightSampleResult.distance);
+        scatterSurface(shadowRay.direction, its.normal, its.shape->material,
+                       &shadowRay);
         Spectrum tr = Tr(scene, shadowRay),
                  f = bsdf->f(-ray.direction, shadowRay.direction);
         float pdf = convertPDF(lightSampleResult, its);
@@ -143,6 +182,8 @@ Spectrum VolPathIntegrator::li(const Ray &_ray, const Scene &scene,
         auto lightSampleResult = light->sample(its, sampler->next2D());
         Ray shadowRay(its.position, lightSampleResult.direction, 1e-4f,
                       lightSampleResult.distance);
+        scatterSurface(shadowRay.direction, its.normal, its.shape->material,
+                       &shadowRay);
         Spectrum tr = Tr(scene, shadowRay),
                  f = bsdf->f(-ray.direction, shadowRay.direction);
         lightSampleResult.pdf *= pdfLight;
@@ -163,6 +204,7 @@ Spectrum VolPathIntegrator::li(const Ray &_ray, const Scene &scene,
       if (beta.isZero())
         break;
       ray = Ray(its.position, bsdfSampleResult.wi, 1e-4f, FLT_MAX);
+      scatterSurface(ray.direction, its.normal, its.shape->material, &ray);
       pdfPrev = bsdfSampleResult.pdf;
       isDeltaPrev = bsdfSampleResult.type == BSDFType::Specular;
       ++step;

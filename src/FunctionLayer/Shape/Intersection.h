@@ -1,4 +1,5 @@
 #pragma once
+#include <CoreLayer/ColorSpace/Spectrum.h>
 #include <CoreLayer/Math/Math.h>
 #include <FunctionLayer/Ray/Ray.h>
 
@@ -23,6 +24,8 @@ struct Intersection {
 struct MediumIntersection : public Intersection {
   bool valid = false;
   const Medium *medium = nullptr;
+  float pdf = .0f;
+  Spectrum sigmaS;
 };
 
 inline void computeRayDifferentials(Intersection *intersection,

@@ -15,5 +15,9 @@ public:
   virtual Spectrum li(const Ray &ray, const Scene &scene,
                       std::shared_ptr<Sampler> sampler) const override;
 
+protected:
   Spectrum Tr(const Scene &scene, const Ray &ray) const;
+
+  void scatterSurface(Vector3f direction, Vector3f normal,
+                      std::shared_ptr<Material> material, Ray *ray) const;
 };

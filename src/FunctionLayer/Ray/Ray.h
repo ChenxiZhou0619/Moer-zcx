@@ -31,5 +31,5 @@ struct Ray {
   Vector3f directionX, directionY;
 
   //* 介质
-  std::shared_ptr<Medium> medium;
+  const Medium *medium = nullptr;
 };

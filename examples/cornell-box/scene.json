@@ -1,6 +1,6 @@
 {
   "output" : {
-    "filename" : "volpath-2.hdr"
+    "filename" : "volpath-10.hdr"
   },
   "sampler" : {
     "type" : "independent",
@@ -101,11 +101,16 @@
             "radian" : -0.5
           },
           "scale" : [0.3, 0.4, 0.3],
-          "translate" : [0.6, -0.6, 0.3]
+          "translate" : [0.6, -0.59, 0.3]
         },
         "material" : {
           "type" : "empty",
-          "albedo" : [0.3, 0.3 , 0.3]
+          "albedo" : [0.3, 0.3 , 0.3],
+          "medium" : {
+            "type" : "homogeneous",
+            "sigmaA" : [1, 1, 1],
+            "sigmaS" : [3, 3, 3]
+          }
         }
       }
 

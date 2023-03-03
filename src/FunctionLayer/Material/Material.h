@@ -1,6 +1,7 @@
 #pragma once
 #include "./BxDF/BSDF.h"
 #include <CoreLayer/Math/Math.h>
+#include <FunctionLayer/Medium/Medium.h>
 #include <FunctionLayer/Shape/Intersection.h>
 #include <FunctionLayer/Texture/NormalTexture.h>
 #include <ResourceLayer/Factory.h>
@@ -14,6 +15,8 @@ public:
   Material(const Json &json) {
     if (json.contains("normalmap"))
       normalMap = std::make_shared<NormalTexture>(json["normalmap"]);
+    if (json.contains("medium"))
+      medium = Factory::construct_class<Medium>(json["medium"]);
   }
 
   virtual std::shared_ptr<BSDF>
@@ -23,6 +26,9 @@ public:
                               Vector3f *normal, Vector3f *tangent,
                               Vector3f *bitangent) const;
 
+  const Medium *getMedium() const;
+
 protected:
   std::shared_ptr<NormalTexture> normalMap;
+  std::shared_ptr<Medium> medium;
 };

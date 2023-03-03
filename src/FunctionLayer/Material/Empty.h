@@ -5,7 +5,7 @@ class EmptyMaterial : public Material {
 public:
   EmptyMaterial() = default;
 
-  EmptyMaterial(const Json &json) {
+  EmptyMaterial(const Json &json) : Material(json) {
     // do nothing
   }
 
