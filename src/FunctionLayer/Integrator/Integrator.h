@@ -36,3 +36,9 @@ inline float convertPDF(const LightSampleResult &result,
   }
   return pdf;
 }
+
+inline float powerHeuristic(float pdfA, float pdfB) {
+  pdfA *= pdfA;
+  pdfB *= pdfB;
+  return pdfA / (pdfA + pdfB);
+}

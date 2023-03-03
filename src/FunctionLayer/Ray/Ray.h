@@ -1,5 +1,8 @@
 #pragma once
 #include <CoreLayer/Math/Math.h>
+#include <memory>
+
+class Medium;
 
 struct Ray {
   Ray() = default;
@@ -26,4 +29,7 @@ struct Ray {
   bool hasDifferentials = false;
   Point3f originX, originY;
   Vector3f directionX, directionY;
+
+  //* 介质
+  std::shared_ptr<Medium> medium;
 };

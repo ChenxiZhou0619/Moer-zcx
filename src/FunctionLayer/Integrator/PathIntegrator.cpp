@@ -3,12 +3,6 @@
 #include "PathIntegrator.h"
 #include <FunctionLayer/Material/Material.h>
 
-float powerHeuristic(float pdfA, float pdfB) {
-  pdfA *= pdfA;
-  pdfB *= pdfB;
-  return pdfA / (pdfA + pdfB);
-}
-
 Spectrum PathIntegrator::li(const Ray &_ray, const Scene &scene,
                             std::shared_ptr<Sampler> sampler) const {
   Spectrum spectrum(.0f), beta(1.f);

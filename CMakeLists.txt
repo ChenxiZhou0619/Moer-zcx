@@ -32,6 +32,7 @@ add_executable(Moer
   src/FunctionLayer/Integrator/DirectIntegrator.cpp
   src/FunctionLayer/Integrator/WhittedIntegrator.cpp
   src/FunctionLayer/Integrator/PathIntegrator.cpp
+  src/FunctionLayer/Integrator/VolPathIntegrator.cpp
   src/FunctionLayer/Camera/Camera.cpp
   src/FunctionLayer/Camera/Pinhole.cpp
   src/FunctionLayer/Scene/Scene.cpp
@@ -48,6 +49,7 @@ add_executable(Moer
   src/FunctionLayer/Texture/Texture.cpp
   src/FunctionLayer/Texture/Mipmap.cpp
   src/FunctionLayer/Material/Matte.cpp
+  src/FunctionLayer/Material/Empty.cpp
   src/FunctionLayer/Material/Mirror.cpp
   src/FunctionLayer/Material/Material.cpp
   src/FunctionLayer/Sampler/IndependentSampler.cpp

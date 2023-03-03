@@ -1,11 +1,11 @@
 {
   "output" : {
-    "filename" : "path-3.hdr"
+    "filename" : "volpath-2.hdr"
   },
   "sampler" : {
     "type" : "independent",
-    "xSamples" : 8,
-    "ySamples" : 8
+    "xSamples" : 4,
+    "ySamples" : 4
   },
   "camera" : {
     "type" : "pinhole",
@@ -24,7 +24,7 @@
     }
   },
   "integrator" : {
-    "type" : "path"
+    "type" : "volpath"
   },
   "scene" : {
     "shapes" : [
@@ -104,7 +104,7 @@
           "translate" : [0.6, -0.6, 0.3]
         },
         "material" : {
-          "type" : "matte",
+          "type" : "empty",
           "albedo" : [0.3, 0.3 , 0.3]
         }
       }
