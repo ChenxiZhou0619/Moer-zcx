@@ -3,6 +3,8 @@
 #include <ResourceLayer/JsonUtil.h>
 class Sampler {
 public:
+  Sampler() = default;
+
   Sampler(const Json &json) {
     xSamples = fetchRequired<int>(json, "xSamples");
     ySamples = fetchRequired<int>(json, "ySamples");

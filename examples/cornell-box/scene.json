@@ -1,6 +1,6 @@
 {
   "output" : {
-    "filename" : "volpath-1.hdr"
+    "filename" : "volpath-5.hdr"
   },
   "sampler" : {
     "type" : "independent",
@@ -109,7 +109,7 @@
           "medium" : {
             "type" : "homogeneous",
             "sigmaA" : [1, 1, 1],
-            "sigmaS" : [12, 12, 12]
+            "sigmaS" : [120, 120, 120]
           }
         }
       }

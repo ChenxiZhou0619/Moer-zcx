@@ -1,5 +1,6 @@
 #include "Medium.h"
 #include <openvdb/openvdb.h>
+#include <openvdb/tools/Interpolation.h>
 class HeterogeneousMedium : public Medium {
 public:
   HeterogeneousMedium() = delete;
@@ -19,4 +20,5 @@ public:
 
 private:
   openvdb::FloatGrid::Ptr density;
+  float sigmaTMax = .0f;
 };

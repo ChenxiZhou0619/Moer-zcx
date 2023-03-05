@@ -67,6 +67,7 @@ Spectrum VolPathIntegrator::li(const Ray &_ray, const Scene &scene,
       if (step > 4)
         break;
       const Medium *medium = mits.medium;
+      Spectrum sigmaS = mits.sigmaS;
       // Sample infiniteLights
       for (auto light : scene.infiniteLights) {
         auto lightSampleResult = light->sample(mits, sampler->next2D());
@@ -83,7 +84,7 @@ Spectrum VolPathIntegrator::li(const Ray &_ray, const Scene &scene,
                                  pdf, medium->phase->pdf(-ray.direction,
                                                          shadowRay.direction));
           Spectrum emission = lightSampleResult.energy;
-          spectrum += beta * misw * f * tr * emission / pdf;
+          spectrum += beta * misw * f * sigmaS * tr * emission / pdf;
         }
       }
 
@@ -105,7 +106,7 @@ Spectrum VolPathIntegrator::li(const Ray &_ray, const Scene &scene,
                                  pdf, medium->phase->pdf(-ray.direction,
                                                          shadowRay.direction));
           Spectrum emission = lightSampleResult.energy;
-          spectrum += beta * misw * f * tr * emission / pdf;
+          spectrum += beta * misw * f * sigmaS * tr * emission / pdf;
         }
       }
 
@@ -113,7 +114,7 @@ Spectrum VolPathIntegrator::li(const Ray &_ray, const Scene &scene,
       PhaseSampleResult phaseSampleResult =
           medium->phase->sample(-ray.direction, sampler->next2D());
 
-      beta *= phaseSampleResult.weight;
+      beta *= phaseSampleResult.weight * sigmaS;
       if (beta.isZero())
         break;
       ray = Ray(mits.position, phaseSampleResult.wi, 1e-4f, FLT_MAX);

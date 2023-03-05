@@ -46,7 +46,7 @@ Spectrum HomogeneousMedium::sample(const Ray &ray, float tmax, Vector2f sample,
     }
     mits->pdf /= 3.f;
   }
-  return tr;
+  return tr / mits->pdf;
 }
 
 REGISTER_CLASS(HomogeneousMedium, "homogeneous")

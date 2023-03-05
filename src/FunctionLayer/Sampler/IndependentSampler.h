@@ -4,6 +4,8 @@
 
 class IndependentSampler : public Sampler {
 public:
+  IndependentSampler() = default;
+
   IndependentSampler(const Json &json);
 
   virtual float next1D() override;
