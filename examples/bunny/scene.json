@@ -1,11 +1,11 @@
 {
   "output" : {
-    "filename" : "bunny-5.hdr"
+    "filename" : "envlight-test-5.hdr"
   },
   "sampler" : {
     "type" : "independent",
-    "xSamples" : 4,
-    "ySamples" : 4
+    "xSamples" : 2,
+    "ySamples" : 2
   },
   "camera" : {
     "type" : "pinhole",
@@ -55,7 +55,7 @@
         "type" : "environmentLight",
         "texture" : {
           "type" : "imageTex",
-          "file" : "images/4k.hdr"
+          "file" : "images/outdoor.hdr"
         }
       }
     ]

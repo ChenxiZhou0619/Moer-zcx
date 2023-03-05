@@ -6,6 +6,8 @@ const Medium *Material::getMedium() const {
   return nullptr;
 }
 
+void Material::setMedium(std::shared_ptr<Medium> _medium) { medium = _medium; }
+
 void Material::computeShadingGeometry(const Intersection &intersection,
                                       Vector3f *normal, Vector3f *tangent,
                                       Vector3f *bitangent) const {

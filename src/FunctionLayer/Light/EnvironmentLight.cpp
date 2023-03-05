@@ -33,17 +33,10 @@ EnvironmentLight::EnvironmentLight(const Json &json) : InfiniteLight(json) {
   environmentMap = Factory::construct_class<Texture<Spectrum>>(json["texture"]);
 
   //* 初始化环境光的能量分布
-  int witdth = environmentMap->size[0], height = environmentMap->size[1];
-  std::vector<Vector2i> indices;
-  indices.reserve(witdth * height);
+  int width = environmentMap->size[0], height = environmentMap->size[1];
+  energyDistribution = Distribution1D<Vector2i>(width * height);
 
-  for (int y = 0; y < height; ++y) {
-    for (int x = 0; x < witdth; ++x) {
-      indices.emplace_back(Vector2i{x, y});
-    }
-  }
-
-  auto weightFunction = [tex = environmentMap](Vector2i index) {
+  auto weightFunction = [tex = environmentMap](const Vector2i &index) {
     const static float invWidth = 1.f / tex->size[0],
                        invHeight = 1.f / tex->size[1];
     float u = index[0] * invWidth, v = index[1] * invHeight;
@@ -53,7 +46,14 @@ EnvironmentLight::EnvironmentLight(const Json &json) : InfiniteLight(json) {
     return (s[0] * 0.212671f + s[1] * 0.715160f + s[2] * 0.072169f) * sinTheta;
   };
 
-  energyDistribution = Distribution<Vector2i>(indices, weightFunction);
+  for (int w = 0; w < width; ++w) {
+    for (int h = 0; h < height; ++h) {
+      Vector2i index{w, h};
+      energyDistribution.add(index, weightFunction(index));
+    }
+  }
+
+  energyDistribution.build();
 }
 
 Spectrum EnvironmentLight::evaluateEmission(const Ray &ray) const {
@@ -65,6 +65,7 @@ Spectrum EnvironmentLight::evaluateEmission(const Ray &ray) const {
 float EnvironmentLight::pdf(const Ray &ray) const {
   Vector2f uv = direction2uv(ray.direction);
   int x = uv[0] * environmentMap->size[0], y = uv[1] * environmentMap->size[1];
+
   return energyDistribution.pdf(Vector2i{x, y}) * environmentMap->size[0] *
          environmentMap->size[1] * INV_PI * INV_PI * .5f / fm::sin(PI * uv[1]);
 }

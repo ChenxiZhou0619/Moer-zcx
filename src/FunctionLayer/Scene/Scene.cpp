@@ -32,8 +32,13 @@ Scene::Scene(const Json &json) {
     }
   }
   //* 产生一个均匀光源分布，每个光源被采样到的几率是一样的
-  lightDistribution = Distribution<std::shared_ptr<Light>>(
-      lightsVec, [](std::shared_ptr<Light> light) -> float { return 1.f; });
+  lightDistribution = Distribution1D<std::shared_ptr<Light>>(lightsVec.size());
+
+  for (auto light : lightsVec) {
+    lightDistribution.add(light, 1);
+  }
+
+  lightDistribution.build();
 
   //* 构建加速结构
   acceleration->build();

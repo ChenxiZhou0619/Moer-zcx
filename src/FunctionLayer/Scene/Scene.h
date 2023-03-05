@@ -22,5 +22,5 @@ public:
 private:
   std::shared_ptr<Acceleration> acceleration;
 
-  Distribution<std::shared_ptr<Light>> lightDistribution;
+  Distribution1D<std::shared_ptr<Light>> lightDistribution;
 };

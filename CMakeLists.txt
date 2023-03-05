@@ -44,6 +44,7 @@ add_executable(Moer
   src/FunctionLayer/Shape/Cube.cpp
   src/FunctionLayer/Shape/Sphere.cpp
   src/FunctionLayer/Shape/Parallelogram.cpp
+  src/FunctionLayer/Shape/GridMedium.cpp
   src/FunctionLayer/Texture/NormalTexture.cpp
   src/FunctionLayer/Texture/ImageTexture.cpp
   src/FunctionLayer/Texture/Texture.cpp
@@ -53,11 +54,13 @@ add_executable(Moer
   src/FunctionLayer/Material/Mirror.cpp
   src/FunctionLayer/Material/Material.cpp
   src/FunctionLayer/Medium/Homogeneous.cpp
+  src/FunctionLayer/Medium/Heterogeneous.cpp
   src/FunctionLayer/Sampler/IndependentSampler.cpp
   src/ResourceLayer/Image.cpp
   src/ResourceLayer/Mesh.cpp
   src/ResourceLayer/FileUtil.cpp
 )
+
 
 target_include_directories(Moer PUBLIC ./externals)
 target_include_directories(Moer PUBLIC ./src)
@@ -81,6 +84,7 @@ endif()
 
 target_link_directories(Moer PUBLIC ${LIBS_PATH})
 target_link_directories(Moer PUBLIC ${PROJECT_SOURCE_DIR}/target/lib)
+target_link_directories(Moer PUBLIC /usr/local/lib)
 
 add_custom_command(TARGET Moer POST_BUILD
   DEPENDS ${LIBS_PATH}/embree3.dll
@@ -90,6 +94,7 @@ add_custom_command(TARGET Moer POST_BUILD
 target_link_libraries(Moer PUBLIC embree3)
 target_link_libraries(Moer PUBLIC tinyobjloader)
 target_link_libraries(Moer PUBLIC tbb)
+target_link_libraries(Moer PUBLIC openvdb)
 
 if(APPLE)
   execute_process(

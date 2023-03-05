@@ -7,6 +7,8 @@ public:
 
   Cube(const Json &json);
 
+  Cube(Point3f _boxMin, Point3f _boxMax, Transform transform);
+
   virtual bool rayIntersectShape(const Ray &ray, float *distance, int *primID,
                                  float *u, float *v) const override;
 

@@ -1,34 +1,38 @@
 #pragma once
+
+#include "Geometry.h"
 #include <functional>
 #include <vector>
 
-template <typename T> class Distribution {
+template <typename T> class Distribution1D {
 public:
-  Distribution() = default;
+  Distribution1D() = default;
 
-  Distribution(const std::vector<T> &_data,
-               const std::function<float(T)> &weightFunction) {
-    data = _data;
-    cdf.reserve(data.size() + 1);
+  Distribution1D(std::size_t size) {
+    data.reserve(size);
+    cdf.reserve(size + 1);
     cdf.emplace_back(.0f);
+  }
 
-    for (int i = 0; i < data.size(); ++i) {
-      float weight = weightFunction(data[i]);
-      cdf.emplace_back(weight + cdf.back());
-    }
+  void add(const T &item, float weight) {
+    data.emplace_back(item);
+    cdf.emplace_back(weight + cdf.back());
+  }
 
-    float invTotal = 1.f / cdf.back();
-    for (int i = 0; i < cdf.size(); ++i) {
-      cdf[i] *= invTotal;
+  void build() {
+    sum = cdf.back();
+    float invTotal = 1.f / sum;
+    for (auto &pdf : cdf) {
+      pdf *= invTotal;
     }
   }
 
   T sample(float sample, float *pdf) const {
     if (cdf.size() == 1) {
-      // no data in distribution
       *pdf = .0f;
       return T();
     }
+
     auto entry = std::lower_bound(cdf.cbegin(), cdf.cend(), sample);
     size_t index = entry - cdf.cbegin() - 1;
     *pdf = cdf[index + 1] - cdf[index];
@@ -43,7 +47,9 @@ public:
     return cdf[index + 1] - cdf[index];
   }
 
-private:
-  std::vector<float> cdf;
+  float sum = .0f;
+
+protected:
   std::vector<T> data;
+  std::vector<float> cdf;
 };

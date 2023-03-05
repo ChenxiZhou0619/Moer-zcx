@@ -24,5 +24,5 @@ public:
 
 private:
   std::shared_ptr<Texture<Spectrum>> environmentMap;
-  Distribution<Vector2i> energyDistribution;
+  Distribution1D<Vector2i> energyDistribution;
 };

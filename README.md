@@ -5,5 +5,5 @@
 Based on Moer-lite
 
 ## TODO
-- VolPathIntegrator 
-- Heterogeneous Medium
+- [X] VolPathIntegrator [2023.3.3] 
+- [X] Heterogeneous Medium

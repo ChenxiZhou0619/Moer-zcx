@@ -1,11 +1,11 @@
 {
   "output" : {
-    "filename" : "volpath-10.hdr"
+    "filename" : "volpath-1.hdr"
   },
   "sampler" : {
     "type" : "independent",
-    "xSamples" : 4,
-    "ySamples" : 4
+    "xSamples" : 3,
+    "ySamples" : 3
   },
   "camera" : {
     "type" : "pinhole",
@@ -109,7 +109,7 @@
           "medium" : {
             "type" : "homogeneous",
             "sigmaA" : [1, 1, 1],
-            "sigmaS" : [3, 3, 3]
+            "sigmaS" : [12, 12, 12]
           }
         }
       }

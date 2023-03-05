@@ -28,6 +28,8 @@ public:
 
   const Medium *getMedium() const;
 
+  void setMedium(std::shared_ptr<Medium> medium);
+
 protected:
   std::shared_ptr<NormalTexture> normalMap;
   std::shared_ptr<Medium> medium;
