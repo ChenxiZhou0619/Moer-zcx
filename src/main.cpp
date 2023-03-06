@@ -15,6 +15,9 @@
 #include <stdio.h>
 #include <tbb/tbb.h>
 
+#include <nanovdb/NanoVDB.h>
+#include <nanovdb/util/IO.h>
+
 #define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
 #define PBWIDTH 60
 
@@ -27,7 +30,6 @@ inline void printProgress(float percentage) {
 }
 
 int main(int argc, char **argv) {
-
   const std::string sceneDir = std::string(argv[1]);
   FileUtil::setWorkingDirectory(sceneDir);
   std::string sceneJsonPath = FileUtil::getFullPath("scene.json");
