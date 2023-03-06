@@ -34,7 +34,8 @@ EnvironmentLight::EnvironmentLight(const Json &json) : InfiniteLight(json) {
 
   //* 初始化环境光的能量分布
   int width = environmentMap->size[0], height = environmentMap->size[1];
-  energyDistribution = Distribution1D<Vector2i>(width * height);
+  //  energyDistribution = Distribution1D<Vector2i>(width * height);
+  energyDist = std::make_shared<Distribution2D>(width, height);
 
   auto weightFunction = [tex = environmentMap](const Vector2i &index) {
     const static float invWidth = 1.f / tex->size[0],
@@ -48,12 +49,13 @@ EnvironmentLight::EnvironmentLight(const Json &json) : InfiniteLight(json) {
 
   for (int w = 0; w < width; ++w) {
     for (int h = 0; h < height; ++h) {
-      Vector2i index{w, h};
-      energyDistribution.add(index, weightFunction(index));
+      // energyDistribution.add(index, weightFunction(index));
+      energyDist->addPdf(w, h, weightFunction({w, h}));
     }
   }
 
-  energyDistribution.build();
+  //  energyDistribution.build();
+  energyDist->build();
 }
 
 Spectrum EnvironmentLight::evaluateEmission(const Ray &ray) const {
@@ -66,7 +68,10 @@ float EnvironmentLight::pdf(const Ray &ray) const {
   Vector2f uv = direction2uv(ray.direction);
   int x = uv[0] * environmentMap->size[0], y = uv[1] * environmentMap->size[1];
 
-  return energyDistribution.pdf(Vector2i{x, y}) * environmentMap->size[0] *
+  // return energyDistribution.pdf(Vector2i{x, y}) * environmentMap->size[0] *
+  //        environmentMap->size[1] * INV_PI * INV_PI * .5f / fm::sin(PI *
+  //        uv[1]);
+  return energyDist->pdf(Vector2i{x, y}) * environmentMap->size[0] *
          environmentMap->size[1] * INV_PI * INV_PI * .5f / fm::sin(PI * uv[1]);
 }
 
@@ -76,8 +81,9 @@ LightSampleResult EnvironmentLight::sample(const Intersection &shadingPoint,
                      invHeight = 1.f / environmentMap->size[1];
 
   float pdf;
-  Vector2i index = energyDistribution.sample(sample[0], &pdf);
-  float u = index[0] * invWidth, v = index[1] * invHeight;
+  //  Vector2i index = energyDistribution.sample(sample[0], &pdf);
+  Vector2i index = energyDist->sample(sample, &pdf);
+  float u = (index[0] + .5f) * invWidth, v = (index[1] + .5f) * invHeight;
   float phi = u * 2 * PI, theta = v * PI;
 
   float x = fm::sin(theta) * fm::sin(phi), y = fm::cos(theta),

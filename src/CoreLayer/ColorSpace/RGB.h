@@ -68,6 +68,10 @@ public:
 
   bool isZero() const { return rgb.isZero(); }
 
+  bool hasNaN() const {
+    return std::isnan(rgb[0]) || std::isnan(rgb[1]) || std::isnan(rgb[2]);
+  }
+
   void debugPrint() const {
     printf("[rgb](");
     for (int i = 0; i < 3; ++i) {
