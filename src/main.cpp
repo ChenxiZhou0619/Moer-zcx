@@ -10,6 +10,7 @@
 #include <ResourceLayer/JsonUtil.h>
 #include <chrono>
 #include <fstream>
+#include <openvdb/openvdb.h>
 #include <regex>
 #include <stdio.h>
 #include <tbb/tbb.h>
@@ -26,6 +27,7 @@ inline void printProgress(float percentage) {
 }
 
 int main(int argc, char **argv) {
+
   const std::string sceneDir = std::string(argv[1]);
   FileUtil::setWorkingDirectory(sceneDir);
   std::string sceneJsonPath = FileUtil::getFullPath("scene.json");

@@ -24,7 +24,7 @@ HeterogeneousMedium::HeterogeneousMedium(const Json &json) : Medium(json) {
 
   openvdb::tools::foreach (density->beginValueOn(),
                            [&](const openvdb::FloatGrid::ValueOnIter &itr) {
-                             itr.setValue(*itr * 1.f);
+                             itr.setValue(*itr * 5.f);
                              sigmaTMax = sigmaTMax > *itr ? sigmaTMax : *itr;
                            });
 
