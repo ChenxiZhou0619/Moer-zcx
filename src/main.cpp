@@ -9,14 +9,11 @@
 #include <ResourceLayer/Image.h>
 #include <ResourceLayer/JsonUtil.h>
 #include <chrono>
+#include <filesystem>
 #include <fstream>
-#include <openvdb/openvdb.h>
 #include <regex>
 #include <stdio.h>
 #include <tbb/tbb.h>
-
-#include <nanovdb/NanoVDB.h>
-#include <nanovdb/util/IO.h>
 
 #define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
 #define PBWIDTH 60
@@ -74,14 +71,15 @@ int main(int argc, char **argv) {
                  .count() /
              1000.f);
 
+  std::string outputDir = FileUtil::getFullPath("result");
+  if (!std::filesystem::exists(outputDir)) {
+    std::filesystem::create_directory(outputDir);
+  }
+
   //* 目前支持输出为png/hdr两种格式
   std::string outputName =
-      fetchRequired<std::string>(json["output"], "filename");
-  if (std::regex_match(outputName, std::regex("(.*)(\\.png)"))) {
-    camera->film->savePNG(outputName.c_str());
-  } else if (std::regex_match(outputName, std::regex("(.*)(\\.hdr)"))) {
-    camera->film->saveHDR(outputName.c_str());
-  } else {
-    std::cout << "Only support output as PNG/HDR\n";
-  }
+      outputDir + "/" + fetchRequired<std::string>(json["output"], "filename");
+
+  auto path = saveImage(outputName.c_str(), camera->film->image, false);
+  std::cout << "Save at " << path << std::endl;
 }

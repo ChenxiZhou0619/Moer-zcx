@@ -42,9 +42,16 @@ public:
   Vector2i size;
   static constexpr int channels = 3;
 
+  friend std::shared_ptr<Image> loadImage(const char *filepath);
+  friend std::string saveImage(const char *filepath, bool overwrite);
+
 private:
   float *data = nullptr;
 };
 
-//* 根据路径加载一张图片(PNG/JPG/HDR)
+//* 根据路径加载一张图片(PNG/JPG/HDR/EXR)
 std::shared_ptr<Image> loadImage(const char *filepath);
+
+//* 保存一张图片(PNG/JPG/HDR/EXR)
+std::string saveImage(std::string filepath, std::shared_ptr<Image> image,
+                      bool overwrite = false);

@@ -96,6 +96,7 @@ target_link_libraries(Moer PUBLIC tinyobjloader)
 target_link_libraries(Moer PUBLIC tbb)
 target_link_libraries(Moer PUBLIC openvdb)
 target_link_libraries(Moer PUBLIC zlib)
+target_link_libraries(Moer PUBLIC tinyexr)
 
 if(APPLE)
   execute_process(

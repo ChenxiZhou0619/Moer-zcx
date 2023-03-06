@@ -4,8 +4,8 @@
   },
   "sampler" : {
     "type" : "independent",
-    "xSamples" : 4,
-    "ySamples" : 4
+    "xSamples" : 1,
+    "ySamples" : 1
   },
   "camera" : {
     "type" : "pinhole",

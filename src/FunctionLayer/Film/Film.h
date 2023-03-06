@@ -25,6 +25,5 @@ public:
 public:
   Vector2i size;
 
-protected:
   std::shared_ptr<Image> image = nullptr;
 };
