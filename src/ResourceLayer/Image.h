@@ -43,7 +43,8 @@ public:
   static constexpr int channels = 3;
 
   friend std::shared_ptr<Image> loadImage(const char *filepath);
-  friend std::string saveImage(const char *filepath, bool overwrite);
+  friend std::string saveImage(std::string filepath,
+                               std::shared_ptr<Image> image, bool overwrite);
 
 private:
   float *data = nullptr;

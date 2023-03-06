@@ -115,7 +115,87 @@ std::shared_ptr<Image> loadImage(const char *filepath) {
   exit(1);
 }
 
-void saveJPGandPNG(const char *filepath) {}
+void saveJPG(const char *filename, float *data, Vector2i size) {
+  uint8_t *result = new uint8_t[size[0] * size[1] * 3]();
+  for (int i = 0; i < size[0] * size[1] * 3; ++i) {
+    result[i] = static_cast<uint8_t>(255 * clamp(data[i], .0f, 1.f));
+  }
+  stbi_write_jpg(filename, size[0], size[1], 3, result, 0);
+  delete[] result;
+}
+
+void savePNG(const char *filename, float *data, Vector2i size) {
+  uint8_t *result = new uint8_t[size[0] * size[1] * 3]();
+  for (int i = 0; i < size[0] * size[1] * 3; ++i) {
+    result[i] = static_cast<uint8_t>(255 * clamp(data[i], .0f, 1.f));
+  }
+  stbi_write_png(filename, size[0], size[1], 3, result, 0);
+  delete[] result;
+}
+
+void saveHDR(const char *filename, float *data, Vector2i size) {
+  stbi_write_hdr(filename, size[0], size[1], 3, data);
+}
+
+void saveEXR(const char *filename, float *data, Vector2i size) {
+  EXRHeader header;
+  InitEXRHeader(&header);
+
+  EXRImage image;
+  InitEXRImage(&image);
+
+  image.num_channels = 3;
+
+  std::vector<float> images[3];
+  images[0].resize(size[0] * size[1]);
+  images[1].resize(size[0] * size[1]);
+  images[2].resize(size[0] * size[1]);
+
+  for (int i = 0; i < size[0] * size[1]; ++i) {
+    images[0][i] = data[i * 3 + 0];
+    images[1][i] = data[i * 3 + 1];
+    images[2][i] = data[i * 3 + 2];
+  }
+
+  float *image_ptr[3];
+  image_ptr[0] = &(images[2].at(0));
+  image_ptr[1] = &(images[1].at(0));
+  image_ptr[2] = &(images[0].at(0));
+
+  image.images = (unsigned char **)image_ptr;
+  image.width = size[0];
+  image.height = size[1];
+
+  header.num_channels = 3;
+  header.channels =
+      (EXRChannelInfo *)malloc(sizeof(EXRChannelInfo) * header.num_channels);
+  strncpy(header.channels[0].name, "B", 255);
+  header.channels[0].name[strlen("B")] = '\0';
+  strncpy(header.channels[1].name, "G", 255);
+  header.channels[1].name[strlen("G")] = '\0';
+  strncpy(header.channels[2].name, "R", 255);
+  header.channels[2].name[strlen("R")] = '\0';
+
+  header.pixel_types = (int *)malloc(sizeof(int) * header.num_channels);
+  header.requested_pixel_types =
+      (int *)malloc(sizeof(int) * header.num_channels);
+  for (int i = 0; i < header.num_channels; ++i) {
+    header.pixel_types[i] = TINYEXR_PIXELTYPE_FLOAT;
+    header.requested_pixel_types[i] = TINYEXR_PIXELTYPE_HALF;
+  }
+
+  const char *err;
+  int ret = SaveEXRImageToFile(&image, &header, filename, &err);
+  if (ret != TINYEXR_SUCCESS) {
+    fprintf(stderr, "Save EXR err: %s\n", err);
+  }
+
+  printf("Saved exr file. [ %s ] \n", filename);
+
+  free(header.channels);
+  free(header.pixel_types);
+  free(header.requested_pixel_types);
+}
 
 std::string saveImage(std::string filepath, std::shared_ptr<Image> image,
                       bool overwrite) {
@@ -133,16 +213,16 @@ std::string saveImage(std::string filepath, std::shared_ptr<Image> image,
   }
 
   if (std::regex_search(path, std::regex("\\.jpg"))) {
-    //
+    saveJPG(path.c_str(), image->data, image->size);
   } else if (std::regex_search(path, std::regex("\\.png"))) {
-    image->savePNG(path.c_str());
+    savePNG(path.c_str(), image->data, image->size);
   } else if (std::regex_search(path, std::regex("\\.hdr"))) {
-    image->saveHDR(path.c_str());
+    saveHDR(path.c_str(), image->data, image->size);
   } else if (std::regex_search(path, std::regex("\\.exr"))) {
-    //
+    saveEXR(path.c_str(), image->data, image->size);
   } else {
     std::cout << "Error image format, save as exr\n";
-    // save as exr
+    saveEXR(path.c_str(), image->data, image->size);
   }
   return path;
 }

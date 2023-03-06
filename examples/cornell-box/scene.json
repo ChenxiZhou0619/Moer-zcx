@@ -1,6 +1,6 @@
 {
   "output" : {
-    "filename" : "volpath-5.hdr"
+    "filename" : "volpath.exr"
   },
   "sampler" : {
     "type" : "independent",

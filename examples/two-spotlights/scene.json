@@ -1,6 +1,6 @@
 {
   "output" : {
-    "filename" : "test0.hdr"
+    "filename" : "test0.exr"
   },
   "sampler" : {
     "type" : "independent",
