@@ -18,6 +18,14 @@ public:
 protected:
   Spectrum Tr(const Scene &scene, const Ray &ray) const;
 
-  void scatterSurface(Vector3f direction, Vector3f normal,
-                      std::shared_ptr<Material> material, Ray *ray) const;
+  // First firstItsOpt
+  // Second finalItsOpt
+  std::pair<std::optional<Intersection>, std::optional<Intersection>>
+  rayIntersectTr(const Scene &scene, Ray ray, Spectrum *tr) const;
+
+  void setRayMedium(Vector3f direction, Vector3f normal,
+                    std::shared_ptr<Material> material, Ray *ray) const;
+
+protected:
+  static constexpr int maxPathLength = 5;
 };

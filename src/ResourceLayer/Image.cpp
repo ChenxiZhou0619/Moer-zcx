@@ -190,8 +190,6 @@ void saveEXR(const char *filename, float *data, Vector2i size) {
     fprintf(stderr, "Save EXR err: %s\n", err);
   }
 
-  printf("Saved exr file. [ %s ] \n", filename);
-
   free(header.channels);
   free(header.pixel_types);
   free(header.requested_pixel_types);

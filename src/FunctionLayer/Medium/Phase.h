@@ -9,6 +9,7 @@ struct PhaseSampleResult {
   Spectrum weight;
   Vector3f wi;
   float pdf;
+  bool isDelta = false;
 };
 
 class Phase {
