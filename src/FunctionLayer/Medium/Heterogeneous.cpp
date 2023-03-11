@@ -49,6 +49,7 @@ Spectrum HeterogeneousMedium::sample(const Ray &ray, float tmax,
       gridSampler(*density);
   static IndependentSampler sampler;
 
+  // TODO robust it
   if (tmax > 1e5f)
     return Spectrum(1.f);
 
@@ -98,7 +99,6 @@ Spectrum HeterogeneousMedium::Tr(Point3f origin, Vector3f direction,
   float invSigmaTTmax = 1.f / sigmaTMax, t = .0f;
   Spectrum tr(1.f);
 
-  int step = 0;
   do {
     t += -fm::log(1 - sampler.next1D()) * invSigmaTTmax;
     if (t > distance)
@@ -109,7 +109,7 @@ Spectrum HeterogeneousMedium::Tr(Point3f origin, Vector3f direction,
     tr *= Spectrum(1.f - std::max(.0f, sigmaT * invSigmaTTmax));
     if (tr.isZero())
       break;
-  } while (++step < 100);
+  } while (1);
   return tr;
 }
 
