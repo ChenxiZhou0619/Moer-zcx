@@ -4,8 +4,8 @@
   },
   "sampler" : {
     "type" : "independent",
-    "xSamples" : 3,
-    "ySamples" : 3
+    "xSamples" : 8,
+    "ySamples" : 8
   },
   "camera" : {
     "type" : "pinhole",
@@ -24,7 +24,8 @@
     }
   },
   "integrator" : {
-    "type" : "volpath"
+    "type" : "volpath",
+    "maxPathLength" : 36
   },
   "scene" : {
     "shapes" : [

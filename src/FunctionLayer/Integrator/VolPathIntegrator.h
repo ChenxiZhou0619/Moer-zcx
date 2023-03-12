@@ -7,7 +7,7 @@ public:
   VolPathIntegrator() = default;
 
   VolPathIntegrator(const Json &json) : Integrator(json) {
-    //
+    maxPathLength = fetchOptional(json, "maxPathLength", 5);
   }
 
   virtual ~VolPathIntegrator() = default;
@@ -27,5 +27,5 @@ protected:
                     std::shared_ptr<Material> material, Ray *ray) const;
 
 protected:
-  static constexpr int maxPathLength = 5;
+  int maxPathLength = 5;
 };
