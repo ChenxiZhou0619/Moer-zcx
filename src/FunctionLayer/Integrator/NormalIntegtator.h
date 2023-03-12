@@ -2,11 +2,11 @@
 #include "Integrator.h"
 
 //* 法线可视化
-class NormalIntegrator : public Integrator {
+class NormalIntegrator : public PixelIntegrator {
 public:
   NormalIntegrator() = default;
 
-  NormalIntegrator(const Json &json) : Integrator(json) {}
+  NormalIntegrator(const Json &json) : PixelIntegrator(json) {}
 
   virtual ~NormalIntegrator() = default;
 

@@ -2,7 +2,7 @@
 #include "Integrator.h"
 
 //* 只计算场景中的直接光照，从光线与几何体的交点采样光源并连接
-class DirectIntegratorSampleLight : public Integrator {
+class DirectIntegratorSampleLight : public PixelIntegrator {
 public:
   DirectIntegratorSampleLight() = default;
 
@@ -13,7 +13,7 @@ public:
 };
 
 //* 只计算场景中的直接光照，从光线与几何体的交点采样BSDF延伸光线，看其是否与光源相交
-class DirectIntegratorSampleBSDF : public Integrator {
+class DirectIntegratorSampleBSDF : public PixelIntegrator {
 public:
   DirectIntegratorSampleBSDF() = default;
 

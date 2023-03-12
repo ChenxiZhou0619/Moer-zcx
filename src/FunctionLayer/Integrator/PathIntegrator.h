@@ -2,11 +2,11 @@
 
 #include "Integrator.h"
 
-class PathIntegrator : public Integrator {
+class PathIntegrator : public PixelIntegrator {
 public:
   PathIntegrator() = default;
 
-  PathIntegrator(const Json &json) : Integrator(json) {
+  PathIntegrator(const Json &json) : PixelIntegrator(json) {
     maxPathLength = fetchOptional(json, "maxPathLength", 5);
   }
 

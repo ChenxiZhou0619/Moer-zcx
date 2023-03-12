@@ -2,11 +2,11 @@
 
 #include "Integrator.h"
 
-class WhittedIntegrator : public Integrator {
+class WhittedIntegrator : public PixelIntegrator {
 public:
   WhittedIntegrator() = default;
 
-  WhittedIntegrator(const Json &json) : Integrator(json) {}
+  WhittedIntegrator(const Json &json) : PixelIntegrator(json) {}
 
   virtual ~WhittedIntegrator() = default;
 

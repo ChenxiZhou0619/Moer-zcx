@@ -2,11 +2,11 @@
 
 #include "Integrator.h"
 
-class VolPathIntegrator : public Integrator {
+class VolPathIntegrator : public PixelIntegrator {
 public:
   VolPathIntegrator() = default;
 
-  VolPathIntegrator(const Json &json) : Integrator(json) {
+  VolPathIntegrator(const Json &json) : PixelIntegrator(json) {
     maxPathLength = fetchOptional(json, "maxPathLength", 5);
   }
 

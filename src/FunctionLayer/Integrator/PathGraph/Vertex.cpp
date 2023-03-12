@@ -118,3 +118,9 @@ LightPath::currentVertex(std::shared_ptr<SurfaceVertex> surfaceVertex) {
     cur = surfaceVertex;
   return cur;
 }
+
+void PathGraph::toFilm(std::shared_ptr<Film> film) const {
+  for (const auto &path : paths) {
+    //
+  }
+}

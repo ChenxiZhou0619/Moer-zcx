@@ -15,17 +15,6 @@
 #include <stdio.h>
 #include <tbb/tbb.h>
 
-#define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-#define PBWIDTH 60
-
-inline void printProgress(float percentage) {
-  int val = (int)(percentage * 100);
-  int lpad = (int)(percentage * PBWIDTH);
-  int rpad = PBWIDTH - lpad;
-  printf("\r%3d%% [%.*s%*s]", val, lpad, PBSTR, rpad, "");
-  fflush(stdout);
-}
-
 int main(int argc, char **argv) {
   const std::string sceneDir = std::string(argv[1]);
   FileUtil::setWorkingDirectory(sceneDir);
@@ -37,33 +26,9 @@ int main(int argc, char **argv) {
   auto integrator = Factory::construct_class<Integrator>(json["integrator"]);
   auto sampler = Factory::construct_class<Sampler>(json["sampler"]);
   int spp = sampler->xSamples * sampler->ySamples;
-  int width = camera->film->size[0], height = camera->film->size[1];
 
   auto start = std::chrono::system_clock::now();
-
-  int finished = 0;
-  tbb::parallel_for(
-      tbb::blocked_range2d<size_t>(0, width, 0, height),
-      [&](const tbb::blocked_range2d<size_t> &r) {
-        for (int row = r.rows().begin(); row != r.rows().end(); ++row)
-          for (int col = r.cols().begin(); col != r.cols().end(); ++col) {
-            Vector2f NDC{(float)row / width, (float)col / height};
-            Spectrum li(.0f);
-            for (int i = 0; i < spp; ++i) {
-              Ray ray = camera->sampleRayDifferentials(
-                  CameraSample{sampler->next2D()}, NDC);
-              li += integrator->li(ray, *scene, sampler);
-            }
-            camera->film->deposit({row, col}, li / spp);
-
-            ++finished;
-            if (finished % 20 == 0) {
-              printProgress((float)finished / (height * width));
-            }
-          }
-      });
-  printProgress(1);
-
+  integrator->render(*camera, *scene, sampler, spp);
   auto end = std::chrono::system_clock::now();
 
   printf("\nRendering costs %.2fs\n",
@@ -76,7 +41,6 @@ int main(int argc, char **argv) {
     std::filesystem::create_directory(outputDir);
   }
 
-  //* 目前支持输出为png/hdr两种格式
   std::string outputName =
       outputDir + "/" + fetchRequired<std::string>(json["output"], "filename");
 

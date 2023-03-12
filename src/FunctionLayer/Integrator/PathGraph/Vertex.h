@@ -1,10 +1,12 @@
 #pragma once
 #include <CoreLayer/ColorSpace/Spectrum.h>
 #include <CoreLayer/Math/Math.h>
+#include <FunctionLayer/Film/Film.h>
 #include <FunctionLayer/Light/Light.h>
 #include <FunctionLayer/Material/BxDF/BSDF.h>
 #include <FunctionLayer/Shape/Shape.h>
 #include <memory>
+#include <mutex>
 
 enum class VertexType { SURFACE, CAMERA, LIGHT };
 
@@ -54,7 +56,9 @@ struct LightVertex : public Vertex {
 };
 
 struct LightPath {
-  LightPath() : root(std::make_shared<CameraVertex>()), cur(root) {}
+  LightPath(Vector2i _pixelLoc)
+      : pixelLoc(_pixelLoc), root(std::make_shared<CameraVertex>()), cur(root) {
+  }
 
   void attachInfLightVertex(Spectrum weight,
                             std::shared_ptr<InfiniteLight> light,
@@ -71,6 +75,9 @@ struct LightPath {
 
   Spectrum gatherRadiance() const;
 
+public:
+  Vector2i pixelLoc;
+
 protected:
   std::shared_ptr<Vertex>
   currentVertex(std::shared_ptr<SurfaceVertex> surfaceVertex = nullptr);
@@ -78,4 +85,22 @@ protected:
   std::shared_ptr<CameraVertex> root;
 
   std::shared_ptr<Vertex> cur;
+};
+
+struct PathGraph {
+  PathGraph(Vector2i resolution, int _spp) : spp(_spp) {
+    paths.reserve(resolution[0] * resolution[1] * spp);
+  }
+
+  void addPath(LightPath path) {
+    std::lock_guard<std::mutex> lk(mtx);
+    paths.emplace_back(path);
+  }
+
+  void toFilm(std::shared_ptr<Film> film) const;
+
+public:
+  std::vector<LightPath> paths;
+  std::mutex mtx;
+  int spp;
 };

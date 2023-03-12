@@ -1,13 +1,50 @@
 #include "PathGraph.h"
 #include <FunctionLayer/Light/Light.h>
 #include <FunctionLayer/Material/Material.h>
+#include <tbb/tbb.h>
+void PathGraphIntegrator::render(const Camera &camera, const Scene &scene,
+                                 std::shared_ptr<Sampler> sampler,
+                                 int spp) const {
+  PathGraph pathGraph(camera.film->size, spp);
+
+  int width = camera.film->size[0], height = camera.film->size[1], finished = 0;
+
+  tbb::parallel_for(
+      tbb::blocked_range2d<size_t>(0, width, 0, height),
+      [&](const tbb::blocked_range2d<size_t> &r) {
+        for (int row = r.rows().begin(); row != r.rows().end(); ++row)
+          for (int col = r.cols().begin(); col != r.cols().end(); ++col) {
+            Vector2f NDC{(float)row / width, (float)col / height};
+            for (int i = 0; i < spp; ++i) {
+              Ray ray = camera.sampleRayDifferentials(
+                  CameraSample{sampler->next2D()}, NDC);
+              LightPath path = constructPath({row, col}, ray, scene, sampler);
+              pathGraph.addPath(path);
+            }
+            ++finished;
+            if (finished % 20 == 0) {
+              printProgress((float)finished / (height * width));
+            }
+          }
+      });
+  printProgress(1);
+
+  pathGraph.toFilm(camera.film);
+}
 
 Spectrum PathGraphIntegrator::li(const Ray &_ray, const Scene &scene,
                                  std::shared_ptr<Sampler> sampler) const {
+  // This will not be invoked
+  exit(1);
+}
 
+LightPath
+PathGraphIntegrator::constructPath(Vector2i pixelLoc, const Ray &_ray,
+                                   const Scene &scene,
+                                   std::shared_ptr<Sampler> sampler) const {
   Ray ray(_ray);
   Spectrum curWeight(1.f), beta(1.f);
-  LightPath path;
+  LightPath path(pixelLoc);
   int pathLength = 0;
   float pdfPrev;
   bool isDeltaPrev = true;
@@ -97,7 +134,7 @@ Spectrum PathGraphIntegrator::li(const Ray &_ray, const Scene &scene,
     ++pathLength;
   } while (1);
 
-  return path.gatherRadiance();
+  return path;
 }
 
 REGISTER_CLASS(PathGraphIntegrator, "pathGraph")
