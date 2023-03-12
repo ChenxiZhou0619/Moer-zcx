@@ -209,6 +209,14 @@ Spectrum VolPathIntegrator::li(const Ray &_ray, const Scene &scene,
         hitSurface = itsOpt.has_value();
       }
     }
+
+    if (pathLength > rrThresholdLength && beta.maxComponent() < rrThreshold) {
+      float q = std::max(1.f - beta.maxComponent(), .05f);
+      if (sampler->next1D() < q)
+        break;
+      beta /= 1 - q;
+    }
+
   } while (1);
   return spectrum;
 }

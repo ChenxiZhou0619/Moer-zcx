@@ -28,4 +28,6 @@ protected:
 
 protected:
   int maxPathLength = 5;
+  int rrThresholdLength = 5;
+  float rrThreshold = .95f;
 };

@@ -8,3 +8,4 @@ Based on Moer-lite
 - [X] VolPathIntegrator [2023.3.3] 
 - [X] Heterogeneous Medium [2023.3.6]
 - [ ] Octree for acceleraing delta-tracking
+- [ ] Path Graphs for surface only scene

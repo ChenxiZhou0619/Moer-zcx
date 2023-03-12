@@ -1,16 +1,17 @@
 #pragma once
 
-#include "Integrator.h"
+#include "../Integrator.h"
+#include "Vertex.h"
 
-class PathIntegrator : public Integrator {
+class PathGraphIntegrator : public Integrator {
 public:
-  PathIntegrator() = default;
+  PathGraphIntegrator() = default;
 
-  PathIntegrator(const Json &json) : Integrator(json) {
+  PathGraphIntegrator(const Json &json) : Integrator(json) {
     maxPathLength = fetchOptional(json, "maxPathLength", 5);
   }
 
-  virtual ~PathIntegrator() = default;
+  virtual ~PathGraphIntegrator() = default;
 
   virtual Spectrum li(const Ray &ray, const Scene &scene,
                       std::shared_ptr<Sampler> sampler) const override;
