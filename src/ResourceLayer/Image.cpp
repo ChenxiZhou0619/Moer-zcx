@@ -18,10 +18,21 @@ Vector3f Image::getValue(const Vector2i &xy) const {
   return Vector3f(data[offset], data[offset + 1], data[offset + 2]);
 }
 
-void Image::setValue(const Vector2i &xy, const Vector3f &val) {
-  int offset = (xy[0] + xy[1] * size[0]) * channels;
+void Image::addValue(const Vector2i &xy, const Vector3f &val, float w) {
+  int offset = (xy[0] + xy[1] * size[0]);
+  weight[offset] += w;
+  offset *= channels;
   for (int i = 0; i < 3; ++i) {
-    data[offset + i] = val[i];
+    data[offset + i] += val[i];
+  }
+}
+
+void Image::normaliz() {
+  for (int i = 0; i < size[0] * size[1]; ++i) {
+    float invW = 1.f / weight[i];
+    data[i * channels + 0] *= invW;
+    data[i * channels + 1] *= invW;
+    data[i * channels + 2] *= invW;
   }
 }
 
@@ -197,6 +208,8 @@ void saveEXR(const char *filename, float *data, Vector2i size) {
 
 std::string saveImage(std::string filepath, std::shared_ptr<Image> image,
                       bool overwrite) {
+  image->normaliz();
+
   //* If filepath exists, add a suffix to it
   std::string path(filepath);
   std::regex rgx("(.*)(\\.)(.*)");

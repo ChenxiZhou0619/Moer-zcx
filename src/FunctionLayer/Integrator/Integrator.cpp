@@ -11,13 +11,11 @@ void PixelIntegrator::render(const Camera &camera, const Scene &scene,
         for (int row = r.rows().begin(); row != r.rows().end(); ++row)
           for (int col = r.cols().begin(); col != r.cols().end(); ++col) {
             Vector2f NDC{(float)row / width, (float)col / height};
-            Spectrum spectrum(.0f);
             for (int i = 0; i < spp; ++i) {
               Ray ray = camera.sampleRayDifferentials(
                   CameraSample{sampler->next2D()}, NDC);
-              spectrum += li(ray, scene, sampler);
+              camera.film->deposit({row, col}, li(ray, scene, sampler), 1.f);
             }
-            camera.film->deposit({row, col}, spectrum / spp);
 
             ++finished;
             if (finished % 20 == 0) {

@@ -23,7 +23,7 @@ std::shared_ptr<Image> resizeHalf(std::shared_ptr<Image> origin) {
                v2 = origin->getValue({x * 2 + 1, y * 2}),
                v3 = origin->getValue({x * 2, y * 2 + 1}),
                v4 = origin->getValue({x * 2 + 1, y * 2 + 1});
-      newImage->setValue({x, y}, (v1 + v2 + v3 + v4) * .25f);
+      newImage->addValue({x, y}, (v1 + v2 + v3 + v4) * .25f, 1.f);
     }
   }
   return newImage;

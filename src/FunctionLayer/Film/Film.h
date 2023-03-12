@@ -12,15 +12,11 @@ public:
     image = std::make_shared<Image>(size);
   }
 
-  void deposit(const Vector2i xy, const Spectrum &spectrum) {
+  void deposit(const Vector2i xy, const Spectrum &spectrum, float w) {
     //* 无论光谱内部实现如何，写入图片时均转为3通道格式
     Vector3f v = toVec3(spectrum);
-    image->setValue(xy, v);
+    image->addValue(xy, v, w);
   }
-
-  void savePNG(const char *filename) { image->savePNG(filename); }
-
-  void saveHDR(const char *filename) { image->saveHDR(filename); }
 
 public:
   Vector2i size;

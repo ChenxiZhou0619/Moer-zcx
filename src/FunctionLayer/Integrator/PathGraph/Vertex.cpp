@@ -121,6 +121,6 @@ LightPath::currentVertex(std::shared_ptr<SurfaceVertex> surfaceVertex) {
 
 void PathGraph::toFilm(std::shared_ptr<Film> film) const {
   for (const auto &path : paths) {
-    //
+    film->deposit(path.pixelLoc, path.gatherRadiance(), 1.f);
   }
 }

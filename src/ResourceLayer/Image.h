@@ -19,18 +19,22 @@ public:
   Image() = delete;
 
   Image(Vector2i _size) : size(_size) {
-    data = new float[_size[0] * _size[1] * channels];
+    data = new float[_size[0] * _size[1] * channels]();
+    weight = new float[_size[0] * _size[1]]();
   }
 
   Image(Vector2i _size, float *_data) : size(_size), data(_data) {}
 
-  ~Image() { delete[] data; }
+  ~Image() {
+    delete[] data;
+    delete[] weight;
+  }
 
   //* 获取坐标[x, y]处的三通道值
   Vector3f getValue(const Vector2i &xy) const;
 
   //* 设置坐标[x, y]处的三通道值
-  void setValue(const Vector2i &xy, const Vector3f &val);
+  void addValue(const Vector2i &xy, const Vector3f &val, float weight);
 
   //* 以PNG格式保存该图片
   void savePNG(const char *filename) const;
@@ -48,6 +52,9 @@ public:
 
 private:
   float *data = nullptr;
+  float *weight = nullptr;
+
+  void normaliz();
 };
 
 //* 根据路径加载一张图片(PNG/JPG/HDR/EXR)
