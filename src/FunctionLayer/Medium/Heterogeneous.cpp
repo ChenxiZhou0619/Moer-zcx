@@ -1,5 +1,5 @@
 #include "Heterogeneous.h"
-#include "IsotropicPhase.h"
+#include "./Phase/IsotropicPhase.h"
 #include <FunctionLayer/Sampler/IndependentSampler.h>
 #include <FunctionLayer/Shape/Intersection.h>
 #include <ResourceLayer/FileUtil.h>
@@ -37,8 +37,6 @@ HeterogeneousMedium::HeterogeneousMedium(const Json &json) : Medium(json) {
 
   boxMin = Point3f(min.x(), min.y(), min.z());
   boxMax = Point3f(max.x(), max.y(), max.z());
-
-  phase = std::make_shared<IsotropicPhase>();
 }
 
 Spectrum HeterogeneousMedium::sample(const Ray &ray, float tmax,

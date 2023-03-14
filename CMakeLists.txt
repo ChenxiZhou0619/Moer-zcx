@@ -57,6 +57,8 @@ add_executable(Moer
   src/FunctionLayer/Material/Empty.cpp
   src/FunctionLayer/Material/Mirror.cpp
   src/FunctionLayer/Material/Material.cpp
+  src/FunctionLayer/Medium/Phase/HGPhase.cpp
+  src/FunctionLayer/Medium/Medium.cpp
   src/FunctionLayer/Medium/Homogeneous.cpp
   src/FunctionLayer/Medium/Heterogeneous.cpp
   src/FunctionLayer/Sampler/IndependentSampler.cpp

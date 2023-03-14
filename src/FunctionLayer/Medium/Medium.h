@@ -1,6 +1,6 @@
 
 #pragma once
-#include "Phase.h"
+#include "./Phase/Phase.h"
 #include <CoreLayer/ColorSpace/Spectrum.h>
 #include <CoreLayer/Math/Math.h>
 #include <FunctionLayer/Ray/Ray.h>
@@ -13,7 +13,7 @@ class Medium {
 public:
   Medium() = delete;
 
-  Medium(const Json &json){};
+  Medium(const Json &json);
 
   virtual Spectrum sample(const Ray &ray, float tmax, Vector2f sample,
                           MediumIntersection *mits) const = 0;

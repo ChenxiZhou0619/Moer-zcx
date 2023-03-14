@@ -1,7 +1,7 @@
 #include "VolPathIntegrator.h"
 #include <FunctionLayer/Material/Material.h>
 #include <FunctionLayer/Medium/Medium.h>
-#include <FunctionLayer/Medium/Phase.h>
+#include <FunctionLayer/Medium/Phase/Phase.h>
 
 Spectrum VolPathIntegrator::li(const Ray &_ray, const Scene &scene,
                                std::shared_ptr<Sampler> sampler) const {

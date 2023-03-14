@@ -1,11 +1,11 @@
 #include "Homogeneous.h"
-#include "IsotropicPhase.h"
+#include "./Phase/HGPhase.h"
+#include "./Phase/IsotropicPhase.h"
 #include <FunctionLayer/Shape/Intersection.h>
 HomogeneousMedium::HomogeneousMedium(const Json &json) : Medium(json) {
   sigmaA = fetchRequired<Spectrum>(json, "sigmaA");
   sigmaS = fetchRequired<Spectrum>(json, "sigmaS");
   sigmaT = sigmaA[0] + sigmaS[0];
-  phase = std::make_shared<IsotropicPhase>(); // TODO
 }
 
 Spectrum HomogeneousMedium::Tr(Point3f origin, Vector3f direction,
