@@ -25,9 +25,9 @@ Ray PinholeCamera::sampleRayDifferentials(const CameraSample &sample,
   float tanHalfFov = fm::tan(verticalFov * 0.5f);
   float z = -film->size[1] * 0.5f / tanHalfFov;
 
-  Vector3f direction = normalize(transform.toWorld(Vector3f{x, y, z})),
-           directionX = normalize(transform.toWorld(Vector3f{x + 1.f, y, z})),
-           directionY = normalize(transform.toWorld(Vector3f{x, y + 1.f, z}));
+  Vector3f direction = normalize(transform.toWorld(Vector3f{-x, y, z})),
+           directionX = normalize(transform.toWorld(Vector3f{-x + 1.f, y, z})),
+           directionY = normalize(transform.toWorld(Vector3f{-x, y + 1.f, z}));
   Point3f origin = transform.toWorld(Point3f(0));
 
   // TODO 如果要实现动态模糊，那么此处需要根据sample中的time采样一个时间

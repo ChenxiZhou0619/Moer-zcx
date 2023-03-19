@@ -63,6 +63,9 @@ void Triangle::fillIntersection(float distance, int primID, float u, float v,
              nv =
                  transform.toWorld(mesh->normalBuffer[faceInfo[2].normalIndex]);
     intersection->normal = normalize(w * nw + u * nu + v * nv);
+    if (intersection->normal.hasNan()) {
+      std::cout << "Stopp here!\n";
+    }
   }
 
   if (mesh->texcodBuffer.empty()) {

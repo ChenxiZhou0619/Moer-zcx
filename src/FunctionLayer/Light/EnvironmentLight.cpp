@@ -3,6 +3,12 @@
 
 //* Helper function
 Vector2f direction2uv(Vector3f direction) {
+  const static Transform t = Transform{
+      Matrix4f::identity(), Transform::rotation(Vector3f{0, 1, 0}, PI * .5f),
+      Matrix4f::identity()};
+
+  direction = t.toWorld(direction);
+
   float u, v;
   float cosTheta = direction[1];
   v = std::acos(cosTheta);
@@ -80,6 +86,10 @@ LightSampleResult EnvironmentLight::sample(const Intersection &shadingPoint,
   const static float invWidth = 1.f / environmentMap->size[0],
                      invHeight = 1.f / environmentMap->size[1];
 
+  const static Transform t = Transform{
+      Matrix4f::identity(), Transform::rotation(Vector3f{0, 1, 0}, -PI * .5f),
+      Matrix4f::identity()};
+
   float pdf;
   //  Vector2i index = energyDistribution.sample(sample[0], &pdf);
   Vector2i index = energyDist->sample(sample, &pdf);
@@ -93,9 +103,9 @@ LightSampleResult EnvironmentLight::sample(const Intersection &shadingPoint,
   pdf *= environmentMap->size[0] * environmentMap->size[1] * INV_PI * INV_PI *
          .5f / (fm::sin(theta));
 
-  return {energy,            //
-          Vector3f{x, y, z}, // 光源相对shadingPoint的方向
-          FLT_MAX,           // 环境光定义在无穷远处
+  return {energy,                       //
+          t.toWorld(Vector3f{x, y, z}), // 光源相对shadingPoint的方向
+          FLT_MAX,                      // 环境光定义在无穷远处
           Vector3f(),
           pdf,
           false,

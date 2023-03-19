@@ -1,8 +1,8 @@
 #pragma once
 
-#include <algorithm>
 #include <FastMath/FastMath.h>
 #include <FastMath/VecMat.h>
+#include <algorithm>
 //* 对于绝大部分图形应用来说，32位的浮点数足以满足计算精度需求且速度更快，故lite版仅支持float
 //* 在4维齐次坐标下对点以及向量进行变换时会有不同处理，故相较于直接使用数学意义上的向量，我们进行了一个简单的封装
 
@@ -73,6 +73,10 @@ public:
   //* 如果当前向量是每个维度上都是0,则返回true
   bool isZero() const {
     return (xyz[0] == 0.f) && (xyz[1] == 0.f) && (xyz[2] == 0.f);
+  }
+
+  bool hasNan() const {
+    return std::isnan(xyz[0]) || std::isnan(xyz[1]) || std::isnan(xyz[2]);
   }
 
   //* 返回向量的欧式长度
