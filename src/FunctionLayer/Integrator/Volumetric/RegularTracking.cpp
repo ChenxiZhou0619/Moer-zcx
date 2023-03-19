@@ -1,0 +1,190 @@
+#include "RegularTracking.h"
+#include <FunctionLayer/Material/Material.h>
+#include <FunctionLayer/Medium/Medium.h>
+RegularTracking::RegularTracking(const Json &json) : PixelIntegrator(json) {
+  maxDepth = fetchOptional(json, "maxPathLength", 5);
+}
+
+Spectrum RegularTracking::li(const Ray &_ray, const Scene &scene,
+                             std::shared_ptr<Sampler> sampler) const {
+  Spectrum L(.0f), beta(1.f);
+  Ray ray(_ray);
+  int depth = 0;
+
+  while (true) {
+    auto si = scene.rayIntersect(ray);
+    Vector3f wo = ray.direction;
+
+    const Medium *medium = ray.medium;
+    MediumIntersection mi;
+    bool mediumInteraction = false;
+    if (medium) {
+      Spectrum Tr;
+      float pdf, tmax = si ? si->distance : FLT_MAX;
+      mediumInteraction = medium->Sample_RegularTracking(
+          ray, tmax, sampler->next2D(), &mi, &Tr, &pdf);
+      beta *= Tr / pdf;
+    }
+
+    if (mediumInteraction) {
+      //* Handle medium interaction
+      if (++depth > maxDepth)
+        break;
+
+      auto phase = mi.mp.phase;
+      Spectrum sigma_a = mi.mp.sigma_a, sigma_s = mi.mp.sigma_s;
+
+      //* 1. Sample Le
+      for (auto light : scene.infiniteLights) {
+        LightSampleResult result = light->sample(mi, sampler->next2D());
+
+        Ray shadowRay(mi.position, result.direction, 1e-4f, FLT_MAX);
+        shadowRay.medium = medium;
+        Vector3f wi = shadowRay.direction;
+
+        Spectrum Tr = Transmittance(scene, shadowRay), p = phase->f(wo, wi);
+        float pdf = convertPDF(result, mi),
+              misw = result.isDelta ? 1.f
+                                    : powerHeuristic(pdf, phase->pdf(wo, wi));
+
+        if (!Tr.isZero() && !p.isZero()) {
+          L += beta * sigma_s * p * Tr * result.energy * misw / pdf;
+        }
+      }
+
+      //* 2. Sample fp
+      {
+        PhaseSampleResult result = phase->sample(wo, sampler->next2D());
+
+        Ray shadowRay{mi.position, result.wi, 1e-4f, FLT_MAX};
+        shadowRay.medium = medium;
+        Vector3f wi = shadowRay.direction;
+
+        Spectrum Tr(1.f), p = phase->f(wo, wi);
+        auto Le_si = TransmittanceRayIntersect(scene, shadowRay, &Tr);
+
+        if (Le_si && Le_si->shape->light) {
+          // TODO Hit surface area
+        } else if (!Le_si) {
+          //* Hit environtment
+          for (auto light : scene.infiniteLights) {
+            float pdf = result.pdf,
+                  misw = result.isDelta
+                             ? 1.f
+                             : powerHeuristic(pdf, light->pdf(shadowRay));
+            Spectrum energy = light->evaluateEmission(shadowRay);
+            L += beta * sigma_s * result.weight * Tr * energy * misw;
+          }
+        }
+      }
+
+      PhaseSampleResult result = phase->sample(wo, sampler->next2D());
+
+      ray = Ray{mi.position, result.wi, 1e-4f, FLT_MAX};
+      ray.medium = medium;
+      beta *= result.weight * sigma_s;
+      continue;
+
+    } else {
+      //* Handle surface interaction
+      if (depth == 0) {
+        if (!si) {
+          for (auto light : scene.infiniteLights)
+            L += beta * light->evaluateEmission(ray);
+        }
+
+        // TODO
+      }
+
+      if (!si)
+        break;
+
+      auto material = si->shape->material;
+      auto bsdf = material->computeBSDF(*si);
+
+      if (!bsdf) {
+        ray = Ray(si->position, ray.direction, 1e-4f, FLT_MAX);
+        setRayMedium(ray.direction, si->normal, material, &ray);
+        continue;
+      } else {
+        std::cout << "Error!\n";
+        exit(1);
+      }
+    }
+  }
+  return L;
+}
+
+Spectrum RegularTracking::Transmittance(const Scene &scene, Ray ray) const {
+  Spectrum Tr(1.f);
+
+  while (true) {
+    const Medium *medium = ray.medium;
+
+    auto si = scene.rayIntersect(ray);
+    float dt = si ? si->distance : ray.tFar;
+
+    if (medium)
+      Tr *= medium->Transmittance_RegularTracking(ray, dt);
+
+    if (si) {
+      auto bsdf = si->shape->material->computeBSDF(*si);
+      if (bsdf) {
+        //* Occlude
+        Tr = Spectrum(.0f);
+        break;
+      } else {
+        //* Skip this surface
+        ray = Ray{si->position, ray.direction, 1e-4f, ray.tFar - dt};
+        setRayMedium(ray.direction, si->normal, si->shape->material, &ray);
+        continue;
+      }
+    }
+    break;
+  }
+
+  return Tr;
+}
+
+std::optional<Intersection>
+RegularTracking::TransmittanceRayIntersect(const Scene &scene, Ray ray,
+                                           Spectrum *Tr) const {
+  float distance = .0f;
+
+  while (true) {
+    const Medium *medium = ray.medium;
+    auto si = scene.rayIntersect(ray);
+
+    float dt = si ? si->distance : ray.tFar;
+
+    if (medium)
+      *Tr *= medium->Transmittance_RegularTracking(ray, dt);
+
+    if (!si)
+      return std::nullopt;
+
+    auto material = si->shape->material;
+    auto bsdf = material->computeBSDF(*si);
+    distance += dt;
+
+    if (bsdf) {
+      //* Return the surface intersection
+      si->distance = distance;
+      return si;
+    } else {
+      //* Skip this surface
+      ray = Ray{si->position, ray.direction, 1e-4f, ray.tFar - dt};
+      setRayMedium(ray.direction, si->normal, material, &ray);
+      continue;
+    }
+  }
+}
+
+void RegularTracking::setRayMedium(Vector3f direction, Vector3f normal,
+                                   std::shared_ptr<Material> material,
+                                   Ray *ray) const {
+  bool towardsInner = dot(direction, normal) < .0f;
+  ray->medium = towardsInner ? material->getMedium() : nullptr;
+}
+
+REGISTER_CLASS(RegularTracking, "regularTracking")

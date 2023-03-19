@@ -5,6 +5,7 @@
 
 class Shape;
 class Medium;
+class Phase;
 
 //* Ray与Shape交点处的信息
 struct Intersection {
@@ -21,11 +22,20 @@ struct Intersection {
   Vector3f dpdx, dpdy;
 };
 
+struct MediumProperty {
+  Spectrum sigma_s;
+  Spectrum sigma_a;
+  std::shared_ptr<Phase> phase;
+};
+
 struct MediumIntersection : public Intersection {
   bool valid = false;
   const Medium *medium = nullptr;
   float pdf = .0f;
   Spectrum sigmaS;
+
+  // New field
+  MediumProperty mp;
 };
 
 inline void computeRayDifferentials(Intersection *intersection,

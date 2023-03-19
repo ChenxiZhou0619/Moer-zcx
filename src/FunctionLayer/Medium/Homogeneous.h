@@ -14,6 +14,15 @@ public:
 
   virtual Spectrum SigmaS(Point3f position) const override;
 
+  //* New Functions
+
+  virtual bool Sample_RegularTracking(Ray ray, float tmax, Vector2f sample,
+                                      MediumIntersection *mits, Spectrum *Tr,
+                                      float *pdf) const override;
+
+  virtual Spectrum Transmittance_RegularTracking(Ray ray,
+                                                 float t) const override;
+
 private:
   Spectrum sigmaA, sigmaS;
   float sigmaT; // TODO

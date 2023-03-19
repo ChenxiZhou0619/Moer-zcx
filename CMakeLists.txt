@@ -36,6 +36,7 @@ add_executable(Moer
   src/FunctionLayer/Integrator/VolPathIntegrator.cpp
   src/FunctionLayer/Integrator/PathGraph/PathGraph.cpp
   src/FunctionLayer/Integrator/PathGraph/Vertex.cpp
+  src/FunctionLayer/Integrator/Volumetric/RegularTracking.cpp
 
   src/FunctionLayer/Camera/Camera.cpp
   src/FunctionLayer/Camera/Pinhole.cpp

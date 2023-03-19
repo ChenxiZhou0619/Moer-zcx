@@ -23,6 +23,14 @@ public:
 
   virtual Spectrum SigmaS(Point3f position) const = 0;
 
+  //* New Functions
+
+  virtual bool Sample_RegularTracking(Ray ray, float tmax, Vector2f sample,
+                                      MediumIntersection *mits, Spectrum *Tr,
+                                      float *pdf) const = 0;
+
+  virtual Spectrum Transmittance_RegularTracking(Ray ray, float t) const = 0;
+
 public:
   std::shared_ptr<Phase> phase;
 };

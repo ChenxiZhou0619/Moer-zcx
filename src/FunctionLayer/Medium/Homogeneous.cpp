@@ -49,4 +49,29 @@ Spectrum HomogeneousMedium::sample(const Ray &ray, float tmax, Vector2f sample,
   return tr / mits->pdf;
 }
 
+bool HomogeneousMedium::Sample_RegularTracking(Ray ray, float tmax,
+                                               Vector2f sample,
+                                               MediumIntersection *mits,
+                                               Spectrum *Tr, float *pdf) const {
+  float dt = -std::log(1 - sample[0]) / sigmaT;
+  if (dt > tmax) {
+    *Tr = Transmittance_RegularTracking(ray, tmax);
+    *pdf = (*Tr)[0];
+    return false;
+  } else {
+    mits->position = ray.at(dt);
+    mits->mp.phase = phase;
+    mits->mp.sigma_a = sigmaA;
+    mits->mp.sigma_s = sigmaS;
+    *Tr = Transmittance_RegularTracking(ray, dt);
+    *pdf = (*Tr)[0] * sigmaT;
+    return true;
+  }
+}
+
+Spectrum HomogeneousMedium::Transmittance_RegularTracking(Ray ray,
+                                                          float t) const {
+  return Spectrum(std::exp(-t * sigmaT));
+}
+
 REGISTER_CLASS(HomogeneousMedium, "homogeneous")
