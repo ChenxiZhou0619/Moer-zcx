@@ -33,7 +33,6 @@ add_executable(Moer
   src/FunctionLayer/Integrator/DirectIntegrator.cpp
   src/FunctionLayer/Integrator/WhittedIntegrator.cpp
   src/FunctionLayer/Integrator/PathIntegrator.cpp
-  src/FunctionLayer/Integrator/VolPathIntegrator.cpp
   src/FunctionLayer/Integrator/PathGraph/PathGraph.cpp
   src/FunctionLayer/Integrator/PathGraph/Vertex.cpp
   src/FunctionLayer/Integrator/Volumetric/RegularTracking.cpp
@@ -58,10 +57,11 @@ add_executable(Moer
   src/FunctionLayer/Material/Empty.cpp
   src/FunctionLayer/Material/Mirror.cpp
   src/FunctionLayer/Material/Material.cpp
+
   src/FunctionLayer/Medium/Phase/HGPhase.cpp
   src/FunctionLayer/Medium/Medium.cpp
   src/FunctionLayer/Medium/Homogeneous.cpp
-  src/FunctionLayer/Medium/Heterogeneous.cpp
+  src/FunctionLayer/Medium/Heterogeneous/Heterogeneous.cpp
   src/FunctionLayer/Sampler/IndependentSampler.cpp
   src/ResourceLayer/Image.cpp
   src/ResourceLayer/Mesh.cpp
