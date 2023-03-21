@@ -62,6 +62,7 @@ add_executable(Moer
   src/FunctionLayer/Medium/Medium.cpp
   src/FunctionLayer/Medium/Homogeneous.cpp
   src/FunctionLayer/Medium/Heterogeneous/Heterogeneous.cpp
+  src/FunctionLayer/Medium/Heterogeneous/RegularTracker.cpp
   src/FunctionLayer/Sampler/IndependentSampler.cpp
   src/ResourceLayer/Image.cpp
   src/ResourceLayer/Mesh.cpp
