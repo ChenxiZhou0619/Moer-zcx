@@ -13,6 +13,10 @@ public:
   virtual Spectrum Transmittance_RegularTracking(Ray ray,
                                                  float t) const override;
 
+  virtual bool Sample_MajorantTracking(Ray ray, float tmax, Vector2f sample,
+                                       MediumIntersection *mits, Spectrum *Tr,
+                                       float *pdf) const override;
+
 private:
   Spectrum sigmaA, sigmaS;
   float sigmaT; // TODO

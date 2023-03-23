@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Medium.h"
+#include "MajorantGrid.h"
 #include <nanovdb/NanoVDB.h>
 #include <nanovdb/util/GridHandle.h>
 
@@ -19,6 +20,10 @@ public:
   virtual Spectrum Transmittance_RegularTracking(Ray ray,
                                                  float t) const override;
 
+  virtual bool Sample_MajorantTracking(Ray ray, float tmax, Vector2f sample,
+                                       MediumIntersection *mits, Spectrum *Tr,
+                                       float *pdf) const override;
+
 public:
   Point3f boxMin, boxMax; // Bound the volume
 
@@ -31,4 +36,7 @@ private:
 
   float voxelScale;
   int minIndex[3], maxIndex[3];
+
+  float sigma_maj = .0f; // TODO replace with maj_grid
+  MajorantGrid majorantGrid;
 };

@@ -1,10 +1,11 @@
 #include "RegularTracker.h"
 
 RegularTracker::RegularTracker(const int min[3], const int max[3],
-                               Point3f origin, Vector3f direction,
-                               float _tmax) {
+                               Point3f origin, Vector3f direction, float _tmax,
+                               float _voxelScale) {
+  voxelScale = _voxelScale;
   tmin = .0f;
-  tmax = _tmax;
+  tmax = _tmax / voxelScale;
 
   for (int axis = 0; axis < 3; ++axis) {
     voxel[axis] = clamp<int>(std::floor(origin[axis]), min[axis], max[axis]);
@@ -43,11 +44,11 @@ bool RegularTracker::track(int *index, float *dt) {
     stepAxis = 2;
 
   if (nextCrossingT[stepAxis] > tmax) {
-    *dt = tmax - tmin;
+    *dt = (tmax - tmin) * voxelScale;
     tmin = tmax;
     terminate = true;
   } else {
-    *dt = nextCrossingT[stepAxis] - tmin;
+    *dt = (nextCrossingT[stepAxis] - tmin) * voxelScale;
     tmin = nextCrossingT[stepAxis];
   }
 

@@ -26,6 +26,10 @@ public:
 
   Point3f Center() const;
 
+  AABB SubBox(Point3f u_min, Point3f u_max) const;
+
+  Point3f UniformCoord(Point3f position) const;
+
 public:
   Point3f pMin, pMax;
 };

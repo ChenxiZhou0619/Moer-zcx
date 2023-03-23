@@ -25,6 +25,7 @@ struct Intersection {
 struct MediumProperty {
   Spectrum sigma_s;
   Spectrum sigma_a;
+  Spectrum sigma_maj;
   std::shared_ptr<Phase> phase;
 };
 

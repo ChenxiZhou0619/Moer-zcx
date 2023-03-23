@@ -49,6 +49,48 @@ HeterogeneousMedium::HeterogeneousMedium(const Json &json) : Medium(json) {
   maxIndex[0] = densityFloatGrid->indexBBox().max().x();
   maxIndex[1] = densityFloatGrid->indexBBox().max().y();
   maxIndex[2] = densityFloatGrid->indexBBox().max().z();
+
+  //* Compute sigma_maj
+  for (int x = minIndex[0]; x < maxIndex[0]; ++x)
+    for (int y = minIndex[1]; y < maxIndex[1]; ++y)
+      for (int z = minIndex[2]; z < maxIndex[2]; ++z)
+        sigma_maj = std::max(sigma_maj,
+                             GridSampler(densityFloatGrid->tree())({x, y, z}));
+  std::cout << "Sigma Majorant " << sigma_maj << std::endl;
+
+  //* Init majorant grid
+  int resolution[] = {8, 8, 8};
+  majorantGrid = MajorantGrid(resolution, boxMin, boxMax, voxelScale);
+
+  constexpr float delta = 1.f;
+  //* Set majorant at each majorantVoxel
+  for (int iz = 0; iz < resolution[2]; ++iz) {
+    for (int iy = 0; iy < resolution[1]; ++iy) {
+      for (int ix = 0; ix < resolution[0]; ++ix) {
+        Point3f u_min, u_max;
+        u_min[0] = (float)ix / resolution[0],
+        u_min[1] = (float)iy / resolution[1];
+        u_min[2] = (float)iz / resolution[2];
+
+        u_max[0] = (float)(ix + 1.f) / resolution[0],
+        u_max[1] = (float)(iy + 1.f) / resolution[1];
+        u_max[2] = (float)(iz + 1.f) / resolution[2];
+
+        auto [vmin, vmax] = majorantGrid.box.SubBox(u_min, u_max);
+        nanovdb::Vec3<float> voxelMin = densityFloatGrid->worldToIndexF(
+            nanovdb::Vec3<float>(vmin[0], vmin[1], vmin[2]));
+        nanovdb::Vec3<float> voxelMax = densityFloatGrid->worldToIndexF(
+            nanovdb::Vec3<float>(vmax[0], vmax[1], vmax[2]));
+        float maj = .0f;
+        for (int nz = voxelMin[2] - delta; nz <= voxelMax[2] + delta; ++nz)
+          for (int ny = voxelMin[1] - delta; ny <= voxelMax[1] + delta; ++ny)
+            for (int nx = voxelMin[0] - delta; nx <= voxelMax[0] + delta; ++nx)
+              maj = std::max(
+                  maj, GridSampler(densityFloatGrid->tree())({nx, ny, nz}));
+        majorantGrid.set(ix, iy, iz, maj);
+      }
+    }
+  }
 }
 
 //* DDA-like tracking
@@ -77,27 +119,24 @@ bool HeterogeneousMedium::Sample_RegularTracking(Ray ray, float tmax,
   float t_world = .0f;
 
   //* Init regularTracker (all params in indexSpace)
-  RegularTracker rt(minIndex, maxIndex, o, d, tmax / voxelScale);
+  RegularTracker rt(minIndex, maxIndex, o, d, tmax, voxelScale);
 
-  // index and dt is in indexSpace
+  // dt in worldSpace
   while (rt.track(index, &dt)) {
     nanovdb::Vec3<float> voxel_loc(index[0] + .5f, index[1] + .5f,
                                    index[2] + .5f);
 
     float density = GridSampler(densityFloatGrid->tree())(voxel_loc),
-          delta = density * dt * voxelScale;
+          delta = density * dt;
 
     if (sum + delta >= thick) {
 
       //* Sample a valid point before exit the medium
-      dt = (thick - sum) / density / voxelScale;
+      dt = (thick - sum) / density;
 
-      t_world += dt * voxelScale;
+      t_world += dt;
 
       mits->position = ray.at(t_world);
-
-      auto dist = (mits->position - ray.origin).length();
-
       mits->mp.phase = phase;
       mits->mp.sigma_a = Spectrum(.0f); // TODO
       mits->mp.sigma_s = density;
@@ -109,8 +148,7 @@ bool HeterogeneousMedium::Sample_RegularTracking(Ray ray, float tmax,
     }
 
     sum += delta;
-
-    t_world += dt * voxelScale;
+    t_world += dt;
   }
 
   *Tr = Spectrum(std::exp(-sum));
@@ -133,7 +171,7 @@ Spectrum HeterogeneousMedium::Transmittance_RegularTracking(Ray ray,
   o = Point3f{o_grid[0], o_grid[1], o_grid[2]};
   d = normalize(Vector3f{d_gird[0], d_gird[1], d_gird[2]});
 
-  RegularTracker rt(minIndex, maxIndex, o, d, t / voxelScale);
+  RegularTracker rt(minIndex, maxIndex, o, d, t, voxelScale);
   int index[3];
   float dt, thick = .0f;
 
@@ -141,9 +179,53 @@ Spectrum HeterogeneousMedium::Transmittance_RegularTracking(Ray ray,
     nanovdb::Vec3<float> voxel_loc(index[0] + .5f, index[1] + .5f,
                                    index[2] + .5f);
     float density = GridSampler(densityFloatGrid->tree())(voxel_loc);
-    thick += density * dt * voxelScale;
+    thick += density * dt;
   }
   return Spectrum(std::exp(-thick));
+}
+
+bool HeterogeneousMedium::Sample_MajorantTracking(Ray ray, float tmax,
+                                                  Vector2f sample,
+                                                  MediumIntersection *mits,
+                                                  Spectrum *Tr,
+                                                  float *pdf) const {
+  *Tr = Spectrum(1.f);
+  *pdf = 1.f;
+
+  Point3f u_coord = majorantGrid.box.UniformCoord(ray.origin);
+
+  MajorantTracker mt = majorantGrid.getTracker(u_coord, ray.direction, tmax);
+
+  float thick = -std::log(1 - sample[0]);
+
+  int index[3];
+  float dt, sum = .0f;
+  float t_world = .0f;
+
+  while (mt.track(index, &dt)) {
+    float maj = majorantGrid.at(index[0], index[1], index[2]), delta = maj * dt;
+
+    if (sum + delta >= thick) {
+      dt = (thick - sum) / maj;
+      t_world += dt;
+
+      mits->position = ray.at(t_world);
+      mits->mp.phase = phase;
+      mits->mp.sigma_a = Spectrum(.0f); // TODO
+
+      nanovdb::Vec3<float> indexLoc =
+          densityFloatGrid->worldToIndexF(nanovdb::Vec3<float>(
+              mits->position[0], mits->position[1], mits->position[2]));
+      mits->mp.sigma_s = GridSampler(densityFloatGrid->tree())(indexLoc);
+      mits->mp.sigma_maj = maj;
+      return true;
+    }
+
+    t_world += dt;
+    sum += delta;
+  }
+
+  return false;
 }
 
 REGISTER_CLASS(HeterogeneousMedium, "heterogeneous")

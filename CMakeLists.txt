@@ -28,6 +28,7 @@ add_executable(Moer
   src/CoreLayer/Math/Transform.cpp
 
   src/FunctionLayer/Acceleration/EmbreeBVH.cpp
+  src/FunctionLayer/Acceleration/AABB.cpp
   
   # Scene
   src/FunctionLayer/Scene/Scene.cpp
@@ -79,9 +80,10 @@ add_executable(Moer
   src/FunctionLayer/Medium/Medium.cpp
   src/FunctionLayer/Medium/Phase/HGPhase.cpp
   src/FunctionLayer/Medium/Homogeneous/Homogeneous.cpp
+
   src/FunctionLayer/Medium/Heterogeneous/Heterogeneous.cpp
   src/FunctionLayer/Medium/Heterogeneous/RegularTracker.cpp
-  
+  src/FunctionLayer/Medium/Heterogeneous/MajorantGrid.cpp  
   # Sampler
   src/FunctionLayer/Sampler/IndependentSampler.cpp
 
