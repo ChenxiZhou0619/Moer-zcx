@@ -1,6 +1,6 @@
 #pragma once
 #include "Cube.h"
-#include <FunctionLayer/Medium/Heterogeneous.h>
+#include <FunctionLayer/Medium/Heterogeneous/Heterogeneous.h>
 class GridMedium : public Cube {
 public:
   GridMedium() = delete;

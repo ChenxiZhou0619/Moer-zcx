@@ -28,4 +28,7 @@ private:
 
   const nanovdb::FloatGrid *densityFloatGrid = nullptr;
   const nanovdb::FloatGrid *temperatureFloatGrid = nullptr;
+
+  float voxelScale;
+  int minIndex[3], maxIndex[3];
 };

@@ -72,6 +72,10 @@ public:
     return std::isnan(rgb[0]) || std::isnan(rgb[1]) || std::isnan(rgb[2]);
   }
 
+  bool hasInf() const {
+    return std::isinf(rgb[0]) || std::isinf(rgb[1]) || std::isinf(rgb[2]);
+  }
+
   float maxComponent() const {
     return std::max(std::max(rgb[0], rgb[1]), rgb[2]);
   }

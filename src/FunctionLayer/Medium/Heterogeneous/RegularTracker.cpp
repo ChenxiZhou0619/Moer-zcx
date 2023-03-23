@@ -7,7 +7,7 @@ RegularTracker::RegularTracker(const int min[3], const int max[3],
   tmax = _tmax;
 
   for (int axis = 0; axis < 3; ++axis) {
-    voxel[axis] = clamp<int>(origin[axis], min[axis], max[axis]);
+    voxel[axis] = clamp<int>(std::floor(origin[axis]), min[axis], max[axis]);
     deltaT[axis] = 1.f / std::abs(direction[axis]);
 
     if (direction[axis] == -.0f)
@@ -42,13 +42,18 @@ bool RegularTracker::track(int *index, float *dt) {
   else
     stepAxis = 2;
 
-  if (nextCrossingT[stepAxis] > tmax)
-    return false;
+  if (nextCrossingT[stepAxis] > tmax) {
+    *dt = tmax - tmin;
+    tmin = tmax;
+    terminate = true;
+  } else {
+    *dt = nextCrossingT[stepAxis] - tmin;
+    tmin = nextCrossingT[stepAxis];
+  }
 
   index[0] = voxel[0];
   index[1] = voxel[1];
   index[2] = voxel[2];
-  *dt = deltaT[stepAxis];
 
   voxel[stepAxis] += step[stepAxis];
 

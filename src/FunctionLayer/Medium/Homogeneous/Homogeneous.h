@@ -1,4 +1,4 @@
-#include "Medium.h"
+#include "../Medium.h"
 
 class HomogeneousMedium : public Medium {
 public:

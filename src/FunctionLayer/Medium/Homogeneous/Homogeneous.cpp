@@ -1,6 +1,6 @@
 #include "Homogeneous.h"
-#include "./Phase/HGPhase.h"
-#include "./Phase/IsotropicPhase.h"
+#include "../Phase/HGPhase.h"
+#include "../Phase/IsotropicPhase.h"
 #include <FunctionLayer/Shape/Intersection.h>
 HomogeneousMedium::HomogeneousMedium(const Json &json) : Medium(json) {
   sigmaA = fetchRequired<Spectrum>(json, "sigmaA");

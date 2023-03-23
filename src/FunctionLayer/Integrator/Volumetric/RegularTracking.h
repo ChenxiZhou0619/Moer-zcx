@@ -12,6 +12,10 @@ public:
   virtual Spectrum li(const Ray &ray, const Scene &scene,
                       std::shared_ptr<Sampler> sampler) const override;
 
+  // virtual void render(const Camera &camera, const Scene &scene,
+  //                     std::shared_ptr<Sampler> sampler, int spp) const
+  //                     override;
+
 protected:
   Spectrum Transmittance(const Scene &scene, Ray ray) const;
 

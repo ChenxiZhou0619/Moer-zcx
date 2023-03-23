@@ -18,6 +18,7 @@ Spectrum RegularTracking::li(const Ray &_ray, const Scene &scene,
     const Medium *medium = ray.medium;
     MediumIntersection mi;
     bool mediumInteraction = false;
+
     if (medium) {
       Spectrum Tr;
       float pdf, tmax = si ? si->distance : FLT_MAX;
@@ -107,7 +108,6 @@ Spectrum RegularTracking::li(const Ray &_ray, const Scene &scene,
       ray = Ray{mi.position, result.wi, 1e-4f, FLT_MAX};
       ray.medium = medium;
       beta *= result.weight * sigma_s;
-      continue;
 
     } else {
       //* Handle surface interaction
@@ -213,8 +213,47 @@ Spectrum RegularTracking::li(const Ray &_ray, const Scene &scene,
       }
     }
   }
+
   return L;
 }
+
+/*
+// For debug
+Spectrum RegularTracking::li(const Ray &_ray, const Scene &scene,
+                             std::shared_ptr<Sampler> sampler) const {
+  auto si = scene.rayIntersect(_ray);
+
+  Ray ray{si->position, _ray.direction, 1e-4f, FLT_MAX};
+  setRayMedium(ray.direction, si->normal, si->shape->material, &ray);
+
+  const Medium *medium = ray.medium;
+  MediumIntersection mits;
+  Spectrum Tr;
+  float pdf;
+
+  si = scene.rayIntersect(ray);
+  bool inMedium = medium->Sample_RegularTracking(ray, si->distance, {.9f, .0f},
+                                                 &mits, &Tr, &pdf);
+  if (inMedium) {
+    std::cout << "Yes!\n";
+
+    std::cout << "Position : ";
+    mits.position.debugPrint();
+
+    std::cout << "Tr : ";
+    Tr.debugPrint();
+
+    float dist = (mits.position - ray.origin).length();
+
+    Spectrum rtTR = medium->Transmittance_RegularTracking(ray, dist);
+
+    std::cout << "rtTR : ";
+    rtTR.debugPrint();
+
+    exit(1);
+  }
+}
+*/
 
 Spectrum RegularTracking::Transmittance(const Scene &scene, Ray ray) const {
   Spectrum Tr(1.f);
@@ -287,5 +326,13 @@ void RegularTracking::setRayMedium(Vector3f direction, Vector3f normal,
   bool towardsInner = dot(direction, normal) < .0f;
   ray->medium = towardsInner ? material->getMedium() : nullptr;
 }
+
+// Just for debug
+// svoid RegularTracking::render(const Camera &camera, const Scene &scene,
+//                             std::shared_ptr<Sampler> sampler, int spp) const
+//                             {
+//  Ray ray = camera.sampleRayDifferentials(CameraSample(), {.5f, .5f});
+//  Spectrum s = li(ray, scene, sampler);
+//}
 
 REGISTER_CLASS(RegularTracking, "regularTracking")

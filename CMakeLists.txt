@@ -28,6 +28,7 @@ add_executable(Moer
   src/CoreLayer/Math/Transform.cpp
 
   src/FunctionLayer/Acceleration/EmbreeBVH.cpp
+  
   src/FunctionLayer/Integrator/Integrator.cpp
   src/FunctionLayer/Integrator/NormalIntegrator.cpp
   src/FunctionLayer/Integrator/DirectIntegrator.cpp
@@ -39,31 +40,41 @@ add_executable(Moer
 
   src/FunctionLayer/Camera/Camera.cpp
   src/FunctionLayer/Camera/Pinhole.cpp
+  
   src/FunctionLayer/Scene/Scene.cpp
+  
   src/FunctionLayer/Light/SpotLight.cpp
   src/FunctionLayer/Light/AreaLight.cpp
   src/FunctionLayer/Light/EnvironmentLight.cpp
+  
   src/FunctionLayer/Shape/Shape.cpp
   src/FunctionLayer/Shape/Triangle.cpp
   src/FunctionLayer/Shape/Cube.cpp
   src/FunctionLayer/Shape/Sphere.cpp
   src/FunctionLayer/Shape/Parallelogram.cpp
   src/FunctionLayer/Shape/GridMedium.cpp
+  
   src/FunctionLayer/Texture/NormalTexture.cpp
   src/FunctionLayer/Texture/ImageTexture.cpp
   src/FunctionLayer/Texture/Texture.cpp
   src/FunctionLayer/Texture/Mipmap.cpp
+  
   src/FunctionLayer/Material/Matte.cpp
   src/FunctionLayer/Material/Empty.cpp
   src/FunctionLayer/Material/Mirror.cpp
   src/FunctionLayer/Material/Material.cpp
 
-  src/FunctionLayer/Medium/Phase/HGPhase.cpp
   src/FunctionLayer/Medium/Medium.cpp
-  src/FunctionLayer/Medium/Homogeneous.cpp
+  
+  src/FunctionLayer/Medium/Phase/HGPhase.cpp
+
+  src/FunctionLayer/Medium/Homogeneous/Homogeneous.cpp
+  
   src/FunctionLayer/Medium/Heterogeneous/Heterogeneous.cpp
   src/FunctionLayer/Medium/Heterogeneous/RegularTracker.cpp
+  
   src/FunctionLayer/Sampler/IndependentSampler.cpp
+  
   src/ResourceLayer/Image.cpp
   src/ResourceLayer/Mesh.cpp
   src/ResourceLayer/FileUtil.cpp

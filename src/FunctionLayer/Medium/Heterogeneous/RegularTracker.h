@@ -10,7 +10,7 @@ public:
 
   bool track(int index[3], float *dt);
 
-private:
+public:
   bool terminate = false;
   float tmin, tmax;
   float nextCrossingT[3], deltaT[3];
