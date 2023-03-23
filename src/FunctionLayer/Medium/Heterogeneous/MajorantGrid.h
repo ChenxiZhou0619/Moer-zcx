@@ -4,7 +4,7 @@
 
 struct MajorantTracker {
 public:
-  bool track(int index[3], float *dt);
+  bool track(int index[3], float *dt, int *stepAxis = nullptr);
 
 public:
   bool terminate = false;

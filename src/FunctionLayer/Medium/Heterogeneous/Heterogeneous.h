@@ -24,6 +24,8 @@ public:
                                        MediumIntersection *mits, Spectrum *Tr,
                                        float *pdf) const override;
 
+  virtual Spectrum Transmittance_RatioTracking(Ray ray, float t) const override;
+
 public:
   Point3f boxMin, boxMax; // Bound the volume
 

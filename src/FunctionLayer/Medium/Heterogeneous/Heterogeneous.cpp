@@ -1,10 +1,10 @@
 #include "Heterogeneous.h"
 #include "RegularTracker.h"
+#include <FunctionLayer/Sampler/IndependentSampler.h>
 #include <FunctionLayer/Shape/Intersection.h>
 #include <ResourceLayer/FileUtil.h>
 #include <nanovdb/util/IO.h>
 #include <nanovdb/util/SampleFromVoxels.h>
-
 void DEBUG(nanovdb::Vec3<float> v) {
   printf("[%.5f, %.5f, %.5f]\n", v[0], v[1], v[2]);
 }
@@ -59,7 +59,7 @@ HeterogeneousMedium::HeterogeneousMedium(const Json &json) : Medium(json) {
   std::cout << "Sigma Majorant " << sigma_maj << std::endl;
 
   //* Init majorant grid
-  int resolution[] = {8, 8, 8};
+  int resolution[] = {16, 16, 16};
   majorantGrid = MajorantGrid(resolution, boxMin, boxMax, voxelScale);
 
   constexpr float delta = 1.f;
@@ -226,6 +226,49 @@ bool HeterogeneousMedium::Sample_MajorantTracking(Ray ray, float tmax,
   }
 
   return false;
+}
+
+Spectrum HeterogeneousMedium::Transmittance_RatioTracking(Ray ray,
+                                                          float t) const {
+  static IndependentSampler sampler;
+
+  Point3f u_coord = majorantGrid.box.UniformCoord(ray.origin);
+  MajorantTracker mt = majorantGrid.getTracker(u_coord, ray.direction, t);
+  Spectrum Tr(1.f);
+
+  int index[3], axis;
+  float dt, thick_sum = .0f, t_sum = .0f;
+
+  float thick = -std::log(1 - sampler.next1D());
+  while (mt.track(index, &dt, &axis)) {
+    float maj = majorantGrid.at(index[0], index[1], index[2]), delta = dt * maj;
+
+    if (thick_sum + delta >= thick) {
+      float step = (thick - thick_sum) / maj;
+      t_sum += step;
+      Point3f position = ray.at(t_sum);
+      nanovdb::Vec3<float> indexLoc = densityFloatGrid->worldToIndexF(
+          nanovdb::Vec3<float>(position[0], position[1], position[2]));
+      float sigma_s = GridSampler(densityFloatGrid->tree())(indexLoc);
+      Tr *= Spectrum(1.f) - sigma_s / maj;
+
+      // Update
+      thick_sum = .0f;
+      thick = -std::log(1 - sampler.next1D());
+      mt.terminate = false;
+      mt.voxel[0] = index[0];
+      mt.voxel[1] = index[1];
+      mt.voxel[2] = index[2];
+      mt.tmin = mt.tmin - dt + step;
+      mt.nextCrossingT[axis] -= mt.deltaT[axis];
+      continue;
+    }
+
+    t_sum += dt;
+    thick_sum += delta;
+  }
+
+  return Tr;
 }
 
 REGISTER_CLASS(HeterogeneousMedium, "heterogeneous")

@@ -1,6 +1,6 @@
 #include "MajorantGrid.h"
 
-bool MajorantTracker::track(int *index, float *dt) {
+bool MajorantTracker::track(int *index, float *dt, int *axis) {
 
   if (terminate)
     return false;
@@ -16,6 +16,9 @@ bool MajorantTracker::track(int *index, float *dt) {
     stepAxis = 1;
   else
     stepAxis = 2;
+
+  if (axis)
+    *axis = stepAxis;
 
   if (nextCrossingT[stepAxis] > tmax) {
     *dt = tmax - tmin;

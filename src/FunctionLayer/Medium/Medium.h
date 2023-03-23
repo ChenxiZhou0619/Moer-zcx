@@ -25,6 +25,8 @@ public:
                                        MediumIntersection *mits, Spectrum *Tr,
                                        float *pdf) const = 0;
 
+  virtual Spectrum Transmittance_RatioTracking(Ray ray, float t) const = 0;
+
 public:
   std::shared_ptr<Phase> phase;
 };

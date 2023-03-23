@@ -56,4 +56,9 @@ bool HomogeneousMedium::Sample_MajorantTracking(Ray ray, float tmax,
   }
 }
 
+Spectrum HomogeneousMedium::Transmittance_RatioTracking(Ray ray,
+                                                        float t) const {
+  return Spectrum(std::exp(-t * sigmaT));
+}
+
 REGISTER_CLASS(HomogeneousMedium, "homogeneous")
