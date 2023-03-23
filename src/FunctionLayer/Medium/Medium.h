@@ -21,6 +21,10 @@ public:
 
   virtual Spectrum Transmittance_RegularTracking(Ray ray, float t) const = 0;
 
+  virtual bool Sample_MajorantTracking(Ray ray, float tmax, Vector2f sample,
+                                       MediumIntersection *mits, Spectrum *Tr,
+                                       float *pdf) const = 0;
+
 public:
   std::shared_ptr<Phase> phase;
 };

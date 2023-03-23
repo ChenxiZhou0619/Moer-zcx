@@ -29,24 +29,33 @@ add_executable(Moer
 
   src/FunctionLayer/Acceleration/EmbreeBVH.cpp
   
+  # Scene
+  src/FunctionLayer/Scene/Scene.cpp
+
+  # Integrator
   src/FunctionLayer/Integrator/Integrator.cpp
-  src/FunctionLayer/Integrator/NormalIntegrator.cpp
-  src/FunctionLayer/Integrator/DirectIntegrator.cpp
-  src/FunctionLayer/Integrator/WhittedIntegrator.cpp
-  src/FunctionLayer/Integrator/PathIntegrator.cpp
+  src/FunctionLayer/Integrator/Surface/NormalIntegrator.cpp
+  src/FunctionLayer/Integrator/Surface/DirectIntegrator.cpp
+  src/FunctionLayer/Integrator/Surface/WhittedIntegrator.cpp
+  src/FunctionLayer/Integrator/Surface/PathIntegrator.cpp
+  
+  src/FunctionLayer/Integrator/Volumetric/VolumetricPathTracer.cpp
+  src/FunctionLayer/Integrator/Volumetric/RegularTracking.cpp
+  src/FunctionLayer/Integrator/Volumetric/DeltaTracking.cpp
+  
   src/FunctionLayer/Integrator/PathGraph/PathGraph.cpp
   src/FunctionLayer/Integrator/PathGraph/Vertex.cpp
-  src/FunctionLayer/Integrator/Volumetric/RegularTracking.cpp
 
+  # Camera
   src/FunctionLayer/Camera/Camera.cpp
   src/FunctionLayer/Camera/Pinhole.cpp
-  
-  src/FunctionLayer/Scene/Scene.cpp
-  
+    
+  # Light
   src/FunctionLayer/Light/SpotLight.cpp
   src/FunctionLayer/Light/AreaLight.cpp
   src/FunctionLayer/Light/EnvironmentLight.cpp
   
+  # Shape
   src/FunctionLayer/Shape/Shape.cpp
   src/FunctionLayer/Shape/Triangle.cpp
   src/FunctionLayer/Shape/Cube.cpp
@@ -54,27 +63,29 @@ add_executable(Moer
   src/FunctionLayer/Shape/Parallelogram.cpp
   src/FunctionLayer/Shape/GridMedium.cpp
   
+  # Texture
   src/FunctionLayer/Texture/NormalTexture.cpp
   src/FunctionLayer/Texture/ImageTexture.cpp
   src/FunctionLayer/Texture/Texture.cpp
   src/FunctionLayer/Texture/Mipmap.cpp
-  
+
+  # Material
   src/FunctionLayer/Material/Matte.cpp
   src/FunctionLayer/Material/Empty.cpp
   src/FunctionLayer/Material/Mirror.cpp
   src/FunctionLayer/Material/Material.cpp
 
+  # Medium
   src/FunctionLayer/Medium/Medium.cpp
-  
   src/FunctionLayer/Medium/Phase/HGPhase.cpp
-
   src/FunctionLayer/Medium/Homogeneous/Homogeneous.cpp
-  
   src/FunctionLayer/Medium/Heterogeneous/Heterogeneous.cpp
   src/FunctionLayer/Medium/Heterogeneous/RegularTracker.cpp
   
+  # Sampler
   src/FunctionLayer/Sampler/IndependentSampler.cpp
-  
+
+  # Resource
   src/ResourceLayer/Image.cpp
   src/ResourceLayer/Mesh.cpp
   src/ResourceLayer/FileUtil.cpp

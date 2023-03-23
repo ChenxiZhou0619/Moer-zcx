@@ -1,5 +1,5 @@
 #pragma once
-#include "Integrator.h"
+#include "../Integrator.h"
 
 //* 法线可视化
 class NormalIntegrator : public PixelIntegrator {

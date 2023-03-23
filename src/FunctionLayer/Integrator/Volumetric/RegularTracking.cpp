@@ -1,12 +1,18 @@
 #include "RegularTracking.h"
 #include <FunctionLayer/Material/Material.h>
 #include <FunctionLayer/Medium/Medium.h>
-RegularTracking::RegularTracking(const Json &json) : PixelIntegrator(json) {
+RegularTracking::RegularTracking(const Json &json)
+    : VolumetricPathTracer(json) {
   maxDepth = fetchOptional(json, "maxPathLength", 5);
 }
 
 Spectrum RegularTracking::li(const Ray &_ray, const Scene &scene,
                              std::shared_ptr<Sampler> sampler) const {
+
+  auto tr_tracker_regular = [](const Medium *medium, Ray ray, float tmax) {
+    return medium->Transmittance_RegularTracking(ray, tmax);
+  };
+
   Spectrum L(.0f), beta(1.f);
   Ray ray(_ray);
   int depth = 0;
@@ -43,7 +49,8 @@ Spectrum RegularTracking::li(const Ray &_ray, const Scene &scene,
         shadowRay.medium = medium;
         Vector3f wi = shadowRay.direction;
 
-        Spectrum Tr = Transmittance(scene, shadowRay), p = phase->f(wo, wi);
+        Spectrum Tr = Transmittance(scene, shadowRay, tr_tracker_regular),
+                 p = phase->f(wo, wi);
         float pdf = convertPDF(result, mi),
               misw = result.isDelta ? 1.f
                                     : powerHeuristic(pdf, phase->pdf(wo, wi));
@@ -62,7 +69,8 @@ Spectrum RegularTracking::li(const Ray &_ray, const Scene &scene,
         shadowRay.medium = medium;
         Vector3f wi = shadowRay.direction;
 
-        Spectrum Tr = Transmittance(scene, shadowRay), p = phase->f(wo, wi);
+        Spectrum Tr = Transmittance(scene, shadowRay, tr_tracker_regular),
+                 p = phase->f(wo, wi);
         float pdf = convertPDF(result, mi) * pdfLight,
               misw = result.isDelta ? 1.f
                                     : powerHeuristic(pdf, phase->pdf(wo, wi));
@@ -81,7 +89,8 @@ Spectrum RegularTracking::li(const Ray &_ray, const Scene &scene,
         Vector3f wi = shadowRay.direction;
 
         Spectrum Tr(1.f), p = phase->f(wo, wi);
-        auto Le_si = TransmittanceRayIntersect(scene, shadowRay, &Tr);
+        auto Le_si = TransmittanceRayIntersect(scene, shadowRay, &Tr,
+                                               tr_tracker_regular);
 
         if (Le_si && Le_si->shape->light) {
           auto light = Le_si->shape->light;
@@ -143,7 +152,8 @@ Spectrum RegularTracking::li(const Ray &_ray, const Scene &scene,
           Vector3f wi = shadowRay.direction;
           setRayMedium(wi, si->normal, material, &shadowRay);
 
-          Spectrum Tr = Transmittance(scene, shadowRay), f = bsdf->f(wo, wi);
+          Spectrum Tr = Transmittance(scene, shadowRay, tr_tracker_regular),
+                   f = bsdf->f(wo, wi);
           float pdf = convertPDF(result, *si),
                 misw = result.isDelta ? 1.f
                                       : powerHeuristic(pdf, bsdf->pdf(wo, wi));
@@ -161,7 +171,8 @@ Spectrum RegularTracking::li(const Ray &_ray, const Scene &scene,
           setRayMedium(shadowRay.direction, si->normal, material, &shadowRay);
           Vector3f wi = shadowRay.direction;
 
-          Spectrum Tr = Transmittance(scene, shadowRay), f = bsdf->f(wo, wi);
+          Spectrum Tr = Transmittance(scene, shadowRay, tr_tracker_regular),
+                   f = bsdf->f(wo, wi);
           float pdf = convertPDF(result, *si) * pdfLight,
                 misw = result.isDelta ? 1.f
                                       : powerHeuristic(pdf, bsdf->pdf(wo, wi));
@@ -179,7 +190,8 @@ Spectrum RegularTracking::li(const Ray &_ray, const Scene &scene,
           setRayMedium(wi, si->normal, material, &shadowRay);
 
           Spectrum Tr(1.f);
-          auto Le_si = TransmittanceRayIntersect(scene, shadowRay, &Tr);
+          auto Le_si = TransmittanceRayIntersect(scene, shadowRay, &Tr,
+                                                 tr_tracker_regular);
           if (Le_si && Le_si->shape->light) {
             auto light = Le_si->shape->light;
             float pdfLe = scene.pdf(light) * light->pdf(shadowRay, *Le_si),
@@ -216,123 +228,5 @@ Spectrum RegularTracking::li(const Ray &_ray, const Scene &scene,
 
   return L;
 }
-
-/*
-// For debug
-Spectrum RegularTracking::li(const Ray &_ray, const Scene &scene,
-                             std::shared_ptr<Sampler> sampler) const {
-  auto si = scene.rayIntersect(_ray);
-
-  Ray ray{si->position, _ray.direction, 1e-4f, FLT_MAX};
-  setRayMedium(ray.direction, si->normal, si->shape->material, &ray);
-
-  const Medium *medium = ray.medium;
-  MediumIntersection mits;
-  Spectrum Tr;
-  float pdf;
-
-  si = scene.rayIntersect(ray);
-  bool inMedium = medium->Sample_RegularTracking(ray, si->distance, {.9f, .0f},
-                                                 &mits, &Tr, &pdf);
-  if (inMedium) {
-    std::cout << "Yes!\n";
-
-    std::cout << "Position : ";
-    mits.position.debugPrint();
-
-    std::cout << "Tr : ";
-    Tr.debugPrint();
-
-    float dist = (mits.position - ray.origin).length();
-
-    Spectrum rtTR = medium->Transmittance_RegularTracking(ray, dist);
-
-    std::cout << "rtTR : ";
-    rtTR.debugPrint();
-
-    exit(1);
-  }
-}
-*/
-
-Spectrum RegularTracking::Transmittance(const Scene &scene, Ray ray) const {
-  Spectrum Tr(1.f);
-
-  while (true) {
-    const Medium *medium = ray.medium;
-
-    auto si = scene.rayIntersect(ray);
-    float dt = si ? si->distance : ray.tFar;
-
-    if (medium)
-      Tr *= medium->Transmittance_RegularTracking(ray, dt);
-
-    if (si) {
-      auto bsdf = si->shape->material->computeBSDF(*si);
-      if (bsdf) {
-        //* Occlude
-        Tr = Spectrum(.0f);
-        break;
-      } else {
-        //* Skip this surface
-        ray = Ray{si->position, ray.direction, 1e-4f, ray.tFar - dt};
-        setRayMedium(ray.direction, si->normal, si->shape->material, &ray);
-        continue;
-      }
-    }
-    break;
-  }
-
-  return Tr;
-}
-
-std::optional<Intersection>
-RegularTracking::TransmittanceRayIntersect(const Scene &scene, Ray ray,
-                                           Spectrum *Tr) const {
-  float distance = .0f;
-
-  while (true) {
-    const Medium *medium = ray.medium;
-    auto si = scene.rayIntersect(ray);
-
-    float dt = si ? si->distance : ray.tFar;
-
-    if (medium)
-      *Tr *= medium->Transmittance_RegularTracking(ray, dt);
-
-    if (!si)
-      return std::nullopt;
-
-    auto material = si->shape->material;
-    auto bsdf = material->computeBSDF(*si);
-    distance += dt;
-
-    if (bsdf) {
-      //* Return the surface intersection
-      si->distance = distance;
-      return si;
-    } else {
-      //* Skip this surface
-      ray = Ray{si->position, ray.direction, 1e-4f, ray.tFar - dt};
-      setRayMedium(ray.direction, si->normal, material, &ray);
-      continue;
-    }
-  }
-}
-
-void RegularTracking::setRayMedium(Vector3f direction, Vector3f normal,
-                                   std::shared_ptr<Material> material,
-                                   Ray *ray) const {
-  bool towardsInner = dot(direction, normal) < .0f;
-  ray->medium = towardsInner ? material->getMedium() : nullptr;
-}
-
-// Just for debug
-// svoid RegularTracking::render(const Camera &camera, const Scene &scene,
-//                             std::shared_ptr<Sampler> sampler, int spp) const
-//                             {
-//  Ray ray = camera.sampleRayDifferentials(CameraSample(), {.5f, .5f});
-//  Spectrum s = li(ray, scene, sampler);
-//}
 
 REGISTER_CLASS(RegularTracking, "regularTracking")

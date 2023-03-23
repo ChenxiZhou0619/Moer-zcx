@@ -74,7 +74,6 @@ bool HeterogeneousMedium::Sample_RegularTracking(Ray ray, float tmax,
 
   int index[3];
   float dt, sum = .0f;
-
   float t_world = .0f;
 
   //* Init regularTracker (all params in indexSpace)
@@ -90,14 +89,10 @@ bool HeterogeneousMedium::Sample_RegularTracking(Ray ray, float tmax,
 
     if (sum + delta >= thick) {
 
-      // std::cout << "Yes!\n";
-
       //* Sample a valid point before exit the medium
       dt = (thick - sum) / density / voxelScale;
 
       t_world += dt * voxelScale;
-
-      // std::cout << t_world << std::endl;
 
       mits->position = ray.at(t_world);
 
@@ -114,11 +109,6 @@ bool HeterogeneousMedium::Sample_RegularTracking(Ray ray, float tmax,
     }
 
     sum += delta;
-
-    if (sum < 0) {
-      std::cout << delta << std::endl;
-      std::cout << density << std::endl;
-    }
 
     t_world += dt * voxelScale;
   }

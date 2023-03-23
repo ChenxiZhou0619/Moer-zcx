@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Integrator.h"
+#include "../Integrator.h"
 
 class PathIntegrator : public PixelIntegrator {
 public:
