@@ -31,7 +31,9 @@ public:
 
   virtual void render(const Camera &camera, const Scene &scene,
                       std::shared_ptr<Sampler> sampler, int spp) const = 0;
-  ;
+
+public:
+  const Medium *medium = nullptr;
 };
 
 class PixelIntegrator : public Integrator {

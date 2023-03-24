@@ -17,7 +17,9 @@ void PixelIntegrator::render(const Camera &camera, const Scene &scene,
             for (int i = 0; i < spp; ++i) {
               Ray ray = camera.sampleRayDifferentials(
                   CameraSample{sampler->next2D()}, NDC);
-              camera.film->deposit({row, col}, li(ray, scene, sampler), 1.f);
+              Spectrum res = li(ray, scene, sampler);
+              if (!res.hasNaN() && !res.hasInf())
+                camera.film->deposit({row, col}, res, 1.f);
             }
 
             ++finished;

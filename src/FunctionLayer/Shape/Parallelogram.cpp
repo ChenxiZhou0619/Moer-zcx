@@ -24,7 +24,7 @@ Parallelogram::Parallelogram(const Json &json) : Shape(json) {
   }
 
   //* 计算面积
-  area = .5f * cross(edge0, edge1).length();
+  area = cross(edge0, edge1).length();
 }
 
 bool Parallelogram::rayIntersectShape(const Ray &ray, float *distance,

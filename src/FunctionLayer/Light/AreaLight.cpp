@@ -8,7 +8,8 @@ AreaLight::AreaLight(const Json &json) : Light(json) {
 
 Spectrum AreaLight::evaluateEmission(const Intersection &intersection,
                                      const Vector3f &wo) const {
-  return energy;
+  bool oneSide = dot(wo, intersection.normal) > 0;
+  return oneSide ? energy : Spectrum(.0f);
 }
 
 float AreaLight::pdf(const Ray &ray, const Intersection &intersection) const {
@@ -26,7 +27,9 @@ LightSampleResult AreaLight::sample(const Intersection &shadingPoint,
   shape->uniformSampleOnSurface(sample, &sampleResult, &pdf);
   Vector3f shadingPoint2sample = sampleResult.position - shadingPoint.position;
 
-  return {energy,
+  bool oneSide = dot(normalize(shadingPoint2sample), sampleResult.normal) < 0;
+
+  return {(oneSide ? energy : Spectrum(.0f)),
           normalize(shadingPoint2sample),
           shadingPoint2sample.length() - EPSILON,
           sampleResult.normal,

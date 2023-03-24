@@ -42,6 +42,11 @@ Scene::Scene(const Json &json) {
 
   //* 构建加速结构
   acceleration->build();
+
+  //* 添加环境介质
+  if (json.contains("medium")) {
+    sceneMedium = Factory::construct_class<Medium>(json["medium"]);
+  }
 }
 
 std::optional<Intersection> Scene::rayIntersect(const Ray &ray) const {

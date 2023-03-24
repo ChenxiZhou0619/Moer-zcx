@@ -20,7 +20,6 @@ DeltaTracking::DeltaTracking(const Json &json) : VolumetricPathTracer(json) {
 Spectrum DeltaTracking::li(const Ray &_ray, const Scene &scene,
                            std::shared_ptr<Sampler> sampler) const {
   auto tr_tracker_regular = [](const Medium *medium, Ray ray, float tmax) {
-    // return medium->Transmittance_RegularTracking(ray, tmax);
     return medium->Transmittance_RatioTracking(ray, tmax);
   };
 

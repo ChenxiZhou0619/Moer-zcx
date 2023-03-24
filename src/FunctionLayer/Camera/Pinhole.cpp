@@ -17,6 +17,7 @@ Ray PinholeCamera::sampleRay(const CameraSample &sample, Vector2f NDC) const {
   return Ray(origin, direction, tNear, tFar, timeStart);
 }
 
+//! TODO 目前请使用该方法采样光线，后续同步两个方法
 Ray PinholeCamera::sampleRayDifferentials(const CameraSample &sample,
                                           Vector2f NDC) const {
   float x = (NDC[0] - 0.5f) * film->size[0] + sample.xy[0],
@@ -37,6 +38,7 @@ Ray PinholeCamera::sampleRayDifferentials(const CameraSample &sample,
   ret.directionX = directionX;
   ret.directionY = directionY;
   ret.originX = ret.originY = origin;
+  ret.medium = medium;
   return ret;
 }
 

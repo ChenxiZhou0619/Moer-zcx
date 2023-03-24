@@ -2,6 +2,7 @@
 #include <FunctionLayer/Acceleration/Acceleration.h>
 #include <FunctionLayer/Light/EnvironmentLight.h>
 #include <FunctionLayer/Light/Light.h>
+#include <FunctionLayer/Medium/Medium.h>
 #include <ResourceLayer/JsonUtil.h>
 class Scene {
 public:
@@ -18,6 +19,8 @@ public:
   float pdf(std::shared_ptr<Light> light) const;
 
   std::vector<std::shared_ptr<InfiniteLight>> infiniteLights;
+
+  std::shared_ptr<Medium> sceneMedium;
 
 private:
   std::shared_ptr<Acceleration> acceleration;

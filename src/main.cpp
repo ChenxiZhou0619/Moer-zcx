@@ -24,6 +24,10 @@ int main(int argc, char **argv) {
   auto camera = Factory::construct_class<Camera>(json["camera"]);
   auto scene = std::make_shared<Scene>(json["scene"]);
   auto integrator = Factory::construct_class<Integrator>(json["integrator"]);
+  if (scene->sceneMedium) {
+    camera->medium = scene->sceneMedium.get();
+    integrator->medium = scene->sceneMedium.get();
+  }
   auto sampler = Factory::construct_class<Sampler>(json["sampler"]);
   int spp = sampler->xSamples * sampler->ySamples;
 

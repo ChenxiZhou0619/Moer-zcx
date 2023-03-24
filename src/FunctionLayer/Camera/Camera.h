@@ -31,6 +31,8 @@ public:
 
   std::shared_ptr<Film> film = nullptr;
 
+  const Medium *medium = nullptr;
+
 protected:
   //* 可视最近距离、最远距离、快门开启时间和结束时间
   float tNear, tFar, timeStart, timeEnd;
