@@ -1,5 +1,5 @@
 #include "Mirror.h"
-#include "./BxDF/Specular.h"
+#include "./BxDF/SpecularReflection.h"
 
 MirrorMaterial::MirrorMaterial(const Json &json) : Material(json) {}
 

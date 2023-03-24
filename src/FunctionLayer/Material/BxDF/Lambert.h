@@ -19,9 +19,6 @@ public:
     Vector3f wi = squareToCosineHemisphere(sample);
     float pdf = squareToCosineHemispherePdf(wi);
     Vector3f w = toWorld(wi);
-    if (std::isnan(w[0]) || std::isnan(w[1]) || std::isnan(w[2])) {
-      std::cout << "Stop!\n";
-    }
 
     return {albedo, toWorld(wi), pdf, BSDFType::Diffuse};
   }

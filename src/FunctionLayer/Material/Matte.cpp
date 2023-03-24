@@ -1,6 +1,5 @@
 #include "Matte.h"
 #include "./BxDF/Lambert.h"
-#include "./BxDF/Specular.h"
 #include <FunctionLayer/Texture/ConstantTexture.h>
 MatteMaterial::MatteMaterial() {
   // default
