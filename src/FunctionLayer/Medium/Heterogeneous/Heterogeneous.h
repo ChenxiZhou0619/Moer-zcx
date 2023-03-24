@@ -38,7 +38,5 @@ private:
 
   float voxelScale;
   int minIndex[3], maxIndex[3];
-
-  float sigma_maj = .0f; // TODO replace with maj_grid
   MajorantGrid majorantGrid;
 };

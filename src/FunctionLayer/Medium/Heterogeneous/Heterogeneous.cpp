@@ -50,14 +50,6 @@ HeterogeneousMedium::HeterogeneousMedium(const Json &json) : Medium(json) {
   maxIndex[1] = densityFloatGrid->indexBBox().max().y();
   maxIndex[2] = densityFloatGrid->indexBBox().max().z();
 
-  //* Compute sigma_maj
-  for (int x = minIndex[0]; x < maxIndex[0]; ++x)
-    for (int y = minIndex[1]; y < maxIndex[1]; ++y)
-      for (int z = minIndex[2]; z < maxIndex[2]; ++z)
-        sigma_maj = std::max(sigma_maj,
-                             GridSampler(densityFloatGrid->tree())({x, y, z}));
-  std::cout << "Sigma Majorant " << sigma_maj << std::endl;
-
   //* Init majorant grid
   int resolution[] = {16, 16, 16};
   majorantGrid = MajorantGrid(resolution, boxMin, boxMax, voxelScale);
