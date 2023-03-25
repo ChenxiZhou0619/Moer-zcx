@@ -1,4 +1,4 @@
-// PathIntegrator with mis and volume rendering
+// PathIntegrator with mis
 
 #include "PathIntegrator.h"
 #include <FunctionLayer/Material/Material.h>

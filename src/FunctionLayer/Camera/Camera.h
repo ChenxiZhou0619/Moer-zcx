@@ -29,6 +29,8 @@ public:
   virtual Ray sampleRayDifferentials(const CameraSample &sample,
                                      Vector2f NDC) const = 0;
 
+  virtual float pixelSolidAngle(Vector2f NDC) const = 0;
+
   std::shared_ptr<Film> film = nullptr;
 
   const Medium *medium = nullptr;
@@ -48,7 +50,9 @@ public:
 
   PerspectiveCamera(const Json &json);
 
-  virtual Ray sampleRay(const CameraSample &, Vector2f) const = 0;
+  virtual Ray sampleRay(const CameraSample &, Vector2f) const override = 0;
+
+  virtual float pixelSolidAngle(Vector2f NDC) const override;
 
 protected:
   float verticalFov, aspectRatio;

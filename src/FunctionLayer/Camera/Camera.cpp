@@ -49,3 +49,16 @@ PerspectiveCamera::PerspectiveCamera(const Json &json) : Camera(json) {
 
   transform = Transform(translation, rotation, Matrix4f::identity());
 }
+
+//* 计算像素对于focal point的solid angle
+float PerspectiveCamera::pixelSolidAngle(Vector2f NDC) const {
+  float x = (NDC[0] - 0.5f) * film->size[0],
+        y = (0.5f - NDC[1]) * film->size[1];
+
+  float tanHalfFov = fm::tan(verticalFov * 0.5f);
+  float z = -film->size[1] * 0.5f / tanHalfFov;
+
+  float distSqr = x * x + y * y + z * z;
+  Vector3f direction = normalize({-x, y, z});
+  return std::abs(dot(direction, Vector3f(0, 0, 1.f))) / distSqr;
+}

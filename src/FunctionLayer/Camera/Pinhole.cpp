@@ -18,6 +18,7 @@ Ray PinholeCamera::sampleRay(const CameraSample &sample, Vector2f NDC) const {
 }
 
 //! TODO 目前请使用该方法采样光线，后续同步两个方法
+// TODO 目前看来光线微分有问题
 Ray PinholeCamera::sampleRayDifferentials(const CameraSample &sample,
                                           Vector2f NDC) const {
   float x = (NDC[0] - 0.5f) * film->size[0] + sample.xy[0],
