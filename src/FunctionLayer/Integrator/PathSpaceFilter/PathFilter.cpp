@@ -73,8 +73,11 @@ void PathFilter::render(const Camera &camera, const Scene &scene,
             float Li_weight = .0f;
             for (int i = 0; i < size; ++i) {
               size_t idx = ret_matches[i].first;
-              Li_refine += group.svs[idx].Li;
-              Li_weight += 1.f;
+              const auto &xj = group.svs[idx];
+              if (float weight = dot(sv.normal, xj.normal); weight > .8f) {
+                Li_refine += xj.Li * weight;
+                Li_weight += weight;
+              }
             }
             sv.Li_refine = Li_refine / Li_weight;
           }
@@ -109,6 +112,7 @@ void PathFilter::samplePath(Ray ray, const Scene &scene,
     if (depth == 0 /* si respond to a shading vertex */) {
       if (!si /* This shading point cann't be filter */) {
         sv->valid = false;
+        sv->weight = Spectrum(1.f);
         for (auto light : scene.infiniteLights) {
           Le += light->evaluateEmission(ray);
         }
@@ -124,6 +128,9 @@ void PathFilter::samplePath(Ray ray, const Scene &scene,
     }
 
     if (++depth > maxDepth)
+      break;
+
+    if (!si)
       break;
 
     //* Compute incident radiance for shading vertex vs

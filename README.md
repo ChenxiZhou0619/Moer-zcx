@@ -8,7 +8,10 @@ Based on Moer-lite
 - [X] Volumetric Rendering (Regular tracking homegeneous/heterogeneous medium) 
 - [X] Transmittance sampling with delta-tracking and transmittance estimation with ratio-tracking
 - [X] MajorantGrid with a DDA-like tracker to accelerate the delta/ratio tracking
+- [X] Path-space filtering
 
 ## Todo
-- [ ] Path-space filtering
-  - [X] KD-Tree for neighbor points query (using nanoflann)
+- [ ] Progressive Photon Mapping
+
+## Other focus
+- [ ] Cuda-accelerated 
