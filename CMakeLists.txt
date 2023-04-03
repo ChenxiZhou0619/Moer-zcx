@@ -49,6 +49,8 @@ add_executable(Moer
 
   src/FunctionLayer/Integrator/PathSpaceFilter/PathFilter.cpp
 
+  src/FunctionLayer/Integrator/PhotonMapping/SPPM.cpp
+
   # Camera
   src/FunctionLayer/Camera/Camera.cpp
   src/FunctionLayer/Camera/Pinhole.cpp
@@ -97,8 +99,6 @@ add_executable(Moer
   src/ResourceLayer/FileUtil.cpp
 )
 
-add_executable(demo ./src/demo.cpp)
-target_include_directories(demo PUBLIC ./externals)
 
 target_include_directories(Moer PUBLIC ./externals)
 target_include_directories(Moer PUBLIC ./src)

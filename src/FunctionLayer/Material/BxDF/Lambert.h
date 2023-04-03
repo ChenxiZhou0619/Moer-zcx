@@ -5,7 +5,8 @@ class LambertReflection : public BSDF {
 public:
   LambertReflection(const Vector3f &_normal, const Vector3f &_tangent,
                     const Vector3f &_bitangent, Spectrum _albedo)
-      : BSDF(_normal, _tangent, _bitangent), albedo(_albedo) {}
+      : BSDF(_normal, _tangent, _bitangent, BSDFType::Diffuse),
+        albedo(_albedo) {}
 
   virtual Spectrum f(const Vector3f &wo, const Vector3f &wi) const override {
     Vector3f woLocal = toLocal(wo), wiLocal = toLocal(wi);

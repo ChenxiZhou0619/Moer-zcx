@@ -14,10 +14,11 @@ struct BSDFSampleResult {
 class BSDF {
 public:
   BSDF(const Vector3f &_normal, const Vector3f &_tangent,
-       const Vector3f &_bitangent) {
+       const Vector3f &_bitangent, BSDFType _type) {
     normal = _normal;
     tangent = _tangent;
     bitangent = _bitangent;
+    type = _type;
   }
   virtual Spectrum f(const Vector3f &wo, const Vector3f &wi) const = 0;
   virtual BSDFSampleResult sample(const Vector3f &wo,
@@ -26,6 +27,9 @@ public:
 
 public:
   Vector3f normal, tangent, bitangent; // 构成局部坐标系
+
+  BSDFType type; // bsdf类型
+
 protected:
   Vector3f toLocal(Vector3f world) const {
     return Vector3f{dot(tangent, world), dot(normal, world),

@@ -5,7 +5,7 @@ class SpecularReflection : public BSDF {
 public:
   SpecularReflection(const Vector3f &_normal, const Vector3f &_tangent,
                      const Vector3f &_bitangent)
-      : BSDF(_normal, _tangent, _bitangent) {}
+      : BSDF(_normal, _tangent, _bitangent, BSDFType::Specular) {}
 
   virtual Spectrum f(const Vector3f &wo, const Vector3f &wi) const override {
     return Spectrum(.0f);

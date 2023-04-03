@@ -5,7 +5,7 @@ class SpecularDielectric : public BSDF {
 public:
   SpecularDielectric(const Vector3f &_normal, const Vector3f &_tangent,
                      const Vector3f &_bitangent, float eta)
-      : BSDF(_normal, _tangent, _bitangent), eta(eta) {}
+      : BSDF(_normal, _tangent, _bitangent, BSDFType::Specular), eta(eta) {}
 
   virtual BSDFSampleResult sample(const Vector3f &wo,
                                   const Vector2f &sample) const override {
