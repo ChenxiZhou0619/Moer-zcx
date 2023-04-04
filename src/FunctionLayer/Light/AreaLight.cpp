@@ -1,4 +1,5 @@
 #include "AreaLight.h"
+#include <FunctionLayer/Material/BxDF/Warp.h>
 #include <ResourceLayer/Factory.h>
 AreaLight::AreaLight(const Json &json) : Light(json) {
   type = LightType::AreaLight;
@@ -36,6 +37,23 @@ LightSampleResult AreaLight::sample(const Intersection &shadingPoint,
           pdf,
           false,
           type};
+}
+
+void AreaLight::sampleLe(Vector2f u_position, Vector2f u_direction,
+                         Ray *photonRay, float *pdf, Spectrum *Le,
+                         Vector3f *lightNormal) const {
+  Intersection sampleResult;
+  float pdf_position;
+  shape->uniformSampleOnSurface(u_position, &sampleResult, &pdf_position);
+  Vector3f dir_local = squareToCosineHemisphere(u_direction);
+  float pdf_direction = squareToCosineHemispherePdf(dir_local);
+  Vector3f dir_world = dir_local[0] * sampleResult.tangent +
+                       dir_local[1] * sampleResult.normal +
+                       dir_local[2] * sampleResult.bitangent;
+  *photonRay = Ray{sampleResult.position, dir_world, 1e-4f, FLT_MAX};
+  *pdf = pdf_position * pdf_direction;
+  *Le = energy;
+  *lightNormal = sampleResult.normal;
 }
 
 REGISTER_CLASS(AreaLight, "areaLight")

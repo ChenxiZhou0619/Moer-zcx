@@ -16,6 +16,10 @@ public:
   virtual float pdf(const Ray &ray,
                     const Intersection &intersection) const override;
 
+  virtual void sampleLe(Vector2f u_position, Vector2f u_direction,
+                        Ray *photonRay, float *pdf, Spectrum *Le,
+                        Vector3f *lightNormal) const override;
+
 private:
   Point3f position;
   Spectrum energy;

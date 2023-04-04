@@ -30,4 +30,10 @@ LightSampleResult SpotLight::sample(const Intersection &shadingPoint,
                            type};
 }
 
+void SpotLight::sampleLe(Vector2f u_position, Vector2f u_direction,
+                         Ray *photonRay, float *pdf, Spectrum *Le,
+                         Vector3f *lightNormal) const { // No implementation now
+  // TODO
+}
+
 REGISTER_CLASS(SpotLight, "spotLight")

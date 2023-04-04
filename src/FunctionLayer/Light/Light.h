@@ -32,6 +32,10 @@ public:
 
   virtual float pdf(const Ray &ray, const Intersection &intersection) const = 0;
 
+  virtual void sampleLe(Vector2f u_position, Vector2f u_direction,
+                        Ray *photonRay, float *pdf, Spectrum *Le,
+                        Vector3f *lightNormal) const = 0;
+
 public:
   LightType type;
 };
@@ -56,4 +60,9 @@ public:
 
   virtual LightSampleResult sample(const Intersection &shadingPoint,
                                    const Vector2f &sample) const override = 0;
+  virtual void sampleLe(Vector2f u_position, Vector2f u_direction,
+                        Ray *photonRay, float *pdf, Spectrum *Le,
+                        Vector3f *lightNormal) const override {
+    // No implementation
+  }
 };
