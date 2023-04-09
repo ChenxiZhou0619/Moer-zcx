@@ -50,6 +50,9 @@ void AreaLight::sampleLe(Vector2f u_position, Vector2f u_direction,
   Vector3f dir_world = dir_local[0] * sampleResult.tangent +
                        dir_local[1] * sampleResult.normal +
                        dir_local[2] * sampleResult.bitangent;
+
+  dir_world = normalize(dir_world);
+
   *photonRay = Ray{sampleResult.position, dir_world, 1e-4f, FLT_MAX};
   *pdf = pdf_position * pdf_direction;
   *Le = energy;

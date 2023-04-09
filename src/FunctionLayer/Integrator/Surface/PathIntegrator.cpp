@@ -32,6 +32,9 @@ Spectrum PathIntegrator::li(const Ray &_ray, const Scene &scene,
       spectrum += beta * misw * light->evaluateEmission(its, -ray.direction);
     }
 
+    if (pathLength >= maxPathLength)
+      break;
+
     if (pathLength > rrThresholdLength && beta.maxComponent() < rrThreshold) {
       float q = std::max(1.f - beta.maxComponent(), .05f);
       if (sampler->next1D() < q)

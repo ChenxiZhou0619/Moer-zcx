@@ -9,7 +9,7 @@
 - [X] Path-space filtering
 
 ## Todo
-- [ ] Progressive Photon Mapping
+- [ ] Progressive Photon Mapping (代码的bug我找不到)
 
 ## Other focus
 - [ ] Cuda-accelerated 

@@ -65,6 +65,9 @@ float DistanceSquare(Point3f p1, Point3f p2) {
   float distance = (p1 - p2).length();
   return distance * distance;
 }
+
+constexpr float radius = 0.005f;
+
 void SPPM::render(const Camera &camera, const Scene &scene,
                   std::shared_ptr<Sampler> sampler, int spp) const {
   // 1. Sample camera ray, store the visible points in a hash grid
@@ -88,7 +91,7 @@ void SPPM::render(const Camera &camera, const Scene &scene,
   std::unique_ptr<SPPMPixel[]> pixels(new SPPMPixel[nPixels]);
 
   for (int i = 0; i < nPixels; ++i) {
-    pixels[i].radius = .005f;
+    pixels[i].radius = radius;
   }
 
   tbb::parallel_for(
@@ -198,7 +201,7 @@ void SPPM::render(const Camera &camera, const Scene &scene,
                       });
   }
 
-  int photonPerIteration = 10000000;
+  int photonPerIteration = 50000000;
   //* Trace photons and compute contribution
   tbb::parallel_for(
       tbb::blocked_range<size_t>(0, photonPerIteration),
@@ -214,7 +217,7 @@ void SPPM::render(const Camera &camera, const Scene &scene,
             light->sampleLe(sampler->next2D(), sampler->next2D(), &photonRay,
                             &pdfPhotonRay, &Le, &nLight);
             Spectrum beta = std::abs(dot(photonRay.direction, nLight)) * Le /
-                            (pdfPhotonRay * pdfLight);
+                            (pdfPhotonRay * pdfLight) / PI; // divide pi ??
             if (beta.isZero())
               continue;
 
@@ -241,7 +244,7 @@ void SPPM::render(const Camera &camera, const Scene &scene,
                       radius * radius) {
                     Spectrum f =
                         pixel->vp.bsdf->f(pixel->vp.wo, -photonRay.direction);
-                    Spectrum phi = beta * f;
+                    Spectrum phi = beta * f * pixel->vp.alpha;
                     pixel->addPhi(phi);
                     ++(pixel->M);
                   }
@@ -262,7 +265,7 @@ void SPPM::render(const Camera &camera, const Scene &scene,
                         L += (pixels[i].M == 0)
                                  ? Spectrum(.0f)
                                  : (pixels[i].Phi / photonPerIteration /
-                                    (PI * .005f * .005f));
+                                    (PI * radius * radius));
                         camera.film->deposit({x, y}, L, 1.f);
                       }
                     });
