@@ -21,5 +21,5 @@ public:
 
 private:
   Spectrum sigmaA, sigmaS;
-  float sigmaT; // TODO
+  Spectrum sigmaT;
 };
