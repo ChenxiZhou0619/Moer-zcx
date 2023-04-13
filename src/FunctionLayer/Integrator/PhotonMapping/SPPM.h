@@ -25,5 +25,4 @@ protected:
   int maxDepth;
   int photonsPerIteration;
   float searchRadius;
-  int iterations;
 };

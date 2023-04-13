@@ -7,6 +7,7 @@
 struct SPPMPixel {
   Spectrum Phi;           // Flux of current iteration
   std::atomic<int> M = 0; // Photons collected by this vp this iteration
+  float N = 0;            // Photons collected totally
   Spectrum tau{.0f};      // Flux estimated by previous iterations
   Spectrum Ld{.0f};       // Le and Ld which is not estimated by sppm
   float radius;           // The search radius of current iteration
@@ -41,7 +42,6 @@ SPPM::SPPM(const Json &json) : Integrator(json) {
   maxDepth = fetchOptional(json, "maxPathLength", 5);
   photonsPerIteration = fetchRequired<int>(json, "photonsPerIteration");
   searchRadius = fetchOptional(json, "searchRadius", 0.005f);
-  iterations = fetchRequired<int>(json, "iterations");
 }
 
 bool ToGrid(Point3f position, const AABB &bounds, int gridRes[3],
@@ -95,116 +95,117 @@ void SPPM::render(const Camera &camera, const Scene &scene,
     pixels[i].radius = searchRadius;
   }
 
-  tbb::parallel_for(
-      tbb::blocked_range2d<size_t>(0, width, 0, height),
-      [&](const tbb::blocked_range2d<size_t> &r) {
-        for (int row = r.rows().begin(); row != r.rows().end(); ++row)
-          for (int col = r.cols().begin(); col != r.cols().end(); ++col) {
-            //* ------------------------
-            //* 1. Sample visible points
-            //* ------------------------
-
-            Vector2f NDC{(float)row / width, (float)col / height};
-            Ray ray = camera.sampleRayDifferentials(
-                CameraSample{sampler->next2D()}, NDC);
-            Spectrum alpha(1.f);
-            SPPMPixel *pixel = &pixels[row + col * width];
-            bool specular_bounce = false;
-
-            //* ----- Random walk -----
-            for (int depth = 0; depth < maxDepth; ++depth) {
-              auto si = scene.rayIntersect(ray);
-              Vector3f wo = -ray.direction;
-              if (!si /* Terminate if escape the scene */) {
-                //* Just break cuz no support for environmentlight
-                break;
-              }
-
-              auto material = si->shape->material;
-              auto bsdf = material->computeBSDF(*si);
-
-              //* Account for emission term
-              if (depth == 0 || specular_bounce) {
-                if (auto light = si->shape->light; light) {
-                  pixel->Ld += alpha * light->evaluateEmission(*si, wo);
-                }
-              }
-
-              //* If hit the diffuse surface, terminate and record vp
-              if (bsdf->type == BSDFType::Diffuse) {
-                pixel->vp = {si->position, si->normal, bsdf, alpha, wo};
-                break;
-              } else /* Hit specular surface */ {
-                BSDFSampleResult result = bsdf->sample(wo, sampler->next2D());
-                alpha *= result.weight;
-                if (alpha.isZero())
-                  break;
-                ray = Ray{si->position, result.wi, 1e-4f, FLT_MAX};
-                specular_bounce = true;
-              }
-            }
-          }
-      });
-
-  const int hashSize = nPixels;
-  std::vector<std::atomic<SPPMPixelListNode *>> grid(hashSize);
-  AABB vp_bound;
-  int gridRes[3];
-
-  //* Organize visible points in hash grid
-  {
-    float max_radius = .0f;
-    for (int i = 0; i < nPixels; ++i) {
-      const auto &pixel = pixels[i];
-      if (pixel.vp.alpha.isZero())
-        continue;
-      max_radius = std::max(max_radius, pixel.radius);
-      AABB search_box{pixel.vp.position - Vector3f{pixel.radius},
-                      pixel.vp.position + Vector3f{pixel.radius}};
-      vp_bound = vp_bound.Union(search_box);
-    }
-
-    Vector3f diag = vp_bound.pMax - vp_bound.pMin;
-    float diagMax = MaxComponent(diag);
-    int gridResBase = (int)(diagMax / max_radius);
-
-    for (int i = 0; i < 3; ++i) {
-      gridRes[i] = std::max((int)(gridResBase * diag[i] / diagMax), 1);
-    }
-
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, nPixels),
-                      [&](const tbb::blocked_range<size_t> &r) {
-                        for (int i = r.begin(); i != r.end(); ++i) {
-                          SPPMPixel *pixel = &pixels[i];
-                          if (pixel->vp.alpha.isZero())
-                            continue;
-                          float radius = pixel->radius;
-
-                          int pMin[3], pMax[3];
-                          ToGrid(pixel->vp.position - Vector3f{radius},
-                                 vp_bound, gridRes, pMin);
-                          ToGrid(pixel->vp.position + Vector3f{radius},
-                                 vp_bound, gridRes, pMax);
-
-                          for (int x = pMin[0]; x <= pMax[0]; ++x)
-                            for (int y = pMin[1]; y <= pMax[1]; ++y)
-                              for (int z = pMin[2]; z <= pMax[2]; ++z) {
-                                int h = hash(x, y, z, hashSize);
-                                SPPMPixelListNode *node =
-                                    new SPPMPixelListNode();
-                                node->pixel = pixel;
-                                node->next = grid[h];
-                                while (grid[h].compare_exchange_weak(
-                                           node->next, node) == false)
-                                  ;
-                              }
-                        }
-                      });
-  }
-
   int sum = 0;
+  int iterations = spp;
 
   for (int itr = 0; itr < iterations; ++itr) {
+    tbb::parallel_for(
+        tbb::blocked_range2d<size_t>(0, width, 0, height),
+        [&](const tbb::blocked_range2d<size_t> &r) {
+          for (int row = r.rows().begin(); row != r.rows().end(); ++row)
+            for (int col = r.cols().begin(); col != r.cols().end(); ++col) {
+              //* ------------------------
+              //* 1. Sample visible points
+              //* ------------------------
+
+              Vector2f NDC{(float)row / width, (float)col / height};
+              Ray ray = camera.sampleRayDifferentials(
+                  CameraSample{sampler->next2D()}, NDC);
+              Spectrum alpha(1.f);
+              SPPMPixel *pixel = &pixels[row + col * width];
+              bool specular_bounce = false;
+
+              //* ----- Random walk -----
+              for (int depth = 0; depth < maxDepth; ++depth) {
+                auto si = scene.rayIntersect(ray);
+                Vector3f wo = -ray.direction;
+                if (!si /* Terminate if escape the scene */) {
+                  //* Just break cuz no support for environmentlight
+                  break;
+                }
+
+                auto material = si->shape->material;
+                auto bsdf = material->computeBSDF(*si);
+
+                //* Account for emission term
+                if (depth == 0 || specular_bounce) {
+                  if (auto light = si->shape->light; light) {
+                    pixel->Ld += alpha * light->evaluateEmission(*si, wo);
+                  }
+                }
+
+                //* If hit the diffuse surface, terminate and record vp
+                if (bsdf->type == BSDFType::Diffuse) {
+                  pixel->vp = {si->position, si->normal, bsdf, alpha, wo};
+                  break;
+                } else /* Hit specular surface */ {
+                  BSDFSampleResult result = bsdf->sample(wo, sampler->next2D());
+                  alpha *= result.weight;
+                  if (alpha.isZero())
+                    break;
+                  ray = Ray{si->position, result.wi, 1e-4f, FLT_MAX};
+                  specular_bounce = true;
+                }
+              }
+            }
+        });
+
+    const int hashSize = nPixels;
+    std::vector<std::atomic<SPPMPixelListNode *>> grid(hashSize);
+    AABB vp_bound;
+    int gridRes[3];
+
+    //* Organize visible points in hash grid
+    {
+      float max_radius = .0f;
+      for (int i = 0; i < nPixels; ++i) {
+        const auto &pixel = pixels[i];
+        if (pixel.vp.alpha.isZero())
+          continue;
+        max_radius = std::max(max_radius, pixel.radius);
+        AABB search_box{pixel.vp.position - Vector3f{pixel.radius},
+                        pixel.vp.position + Vector3f{pixel.radius}};
+        vp_bound = vp_bound.Union(search_box);
+      }
+
+      Vector3f diag = vp_bound.pMax - vp_bound.pMin;
+      float diagMax = MaxComponent(diag);
+      int gridResBase = (int)(diagMax / max_radius);
+
+      for (int i = 0; i < 3; ++i) {
+        gridRes[i] = std::max((int)(gridResBase * diag[i] / diagMax), 1);
+      }
+
+      tbb::parallel_for(tbb::blocked_range<size_t>(0, nPixels),
+                        [&](const tbb::blocked_range<size_t> &r) {
+                          for (int i = r.begin(); i != r.end(); ++i) {
+                            SPPMPixel *pixel = &pixels[i];
+                            if (pixel->vp.alpha.isZero())
+                              continue;
+                            float radius = pixel->radius;
+
+                            int pMin[3], pMax[3];
+                            ToGrid(pixel->vp.position - Vector3f{radius},
+                                   vp_bound, gridRes, pMin);
+                            ToGrid(pixel->vp.position + Vector3f{radius},
+                                   vp_bound, gridRes, pMax);
+
+                            for (int x = pMin[0]; x <= pMax[0]; ++x)
+                              for (int y = pMin[1]; y <= pMax[1]; ++y)
+                                for (int z = pMin[2]; z <= pMax[2]; ++z) {
+                                  int h = hash(x, y, z, hashSize);
+                                  SPPMPixelListNode *node =
+                                      new SPPMPixelListNode();
+                                  node->pixel = pixel;
+                                  node->next = grid[h];
+                                  while (grid[h].compare_exchange_weak(
+                                             node->next, node) == false)
+                                    ;
+                                }
+                          }
+                        });
+    }
+
     //* Trace photons and compute contribution
     tbb::parallel_for(
         tbb::blocked_range<size_t>(0, photonsPerIteration),
@@ -247,7 +248,7 @@ void SPPM::render(const Camera &camera, const Scene &scene,
                         radius * radius) {
                       Spectrum f =
                           pixel->vp.bsdf->f(pixel->vp.wo, -photonRay.direction);
-                      Spectrum phi = beta * f * pixel->vp.alpha;
+                      Spectrum phi = beta * f;
                       pixel->addPhi(phi);
                       ++(pixel->M);
                     }
@@ -272,12 +273,34 @@ void SPPM::render(const Camera &camera, const Scene &scene,
           }
         });
 
+    for (int i = 0; i < nPixels; ++i) {
+      if (grid[i]) {
+        delete grid[i];
+      }
+    }
+
     //* Update pixel information
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, nPixels),
-                      [&](const tbb::blocked_range<size_t> &r) {
-                        for (int i = r.begin(); i != r.end(); ++i) {
-                        }
-                      });
+    tbb::parallel_for(
+        tbb::blocked_range<size_t>(0, nPixels),
+        [&](const tbb::blocked_range<size_t> &r) {
+          for (int i = r.begin(); i != r.end(); ++i) {
+            SPPMPixel *pixel = &pixels[i];
+            if (pixel->M > 0) {
+              constexpr float gamma = 2.f / 3.f;
+              float Nnew = pixel->N + gamma * pixel->M;
+              float Rnew =
+                  pixel->radius * fm::sqrt(Nnew / (pixel->N + pixel->M));
+              pixel->tau = pixel->tau + pixel->vp.alpha * pixel->Phi;
+              pixel->tau *= (Rnew * Rnew) / (pixel->radius * pixel->radius);
+              pixel->N = Nnew;
+              pixel->radius = Rnew;
+              pixel->M = 0;
+              pixel->Phi = Spectrum(.0f);
+            }
+            pixel->vp.alpha = .0f;
+            pixel->vp.bsdf = nullptr;
+          }
+        });
   }
   printProgress(1.f);
 
@@ -287,11 +310,10 @@ void SPPM::render(const Camera &camera, const Scene &scene,
                       for (int i = r.begin(); i != r.end(); ++i) {
                         int x = i % width;
                         int y = i / width;
-                        Spectrum L = pixels[i].Ld;
-                        L += (pixels[i].M == 0)
-                                 ? Spectrum(.0f)
-                                 : (pixels[i].Phi / photonsPerIteration /
-                                    (PI * searchRadius * searchRadius));
+                        Spectrum L = pixels[i].Ld / iterations;
+                        float radius = pixels[i].radius;
+                        L += pixels[i].tau / (iterations * photonsPerIteration *
+                                              PI * radius * radius);
                         camera.film->deposit({x, y}, L, 1.f);
                       }
                     });
