@@ -10,6 +10,7 @@
 
 ## Todo
 - [ ] Progressive Photon Mapping (代码的bug我找不到)
+  - [ ] 考虑用点光源去做测试
 
 ## Other focus
 - [ ] Cuda-accelerated 

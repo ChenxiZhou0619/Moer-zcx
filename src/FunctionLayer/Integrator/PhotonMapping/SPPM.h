@@ -22,5 +22,8 @@ public:
 
 protected:
   // TODO
-  int maxDepth = 5;
+  int maxDepth;
+  int photonsPerIteration;
+  float searchRadius;
+  int iterations;
 };

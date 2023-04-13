@@ -38,7 +38,10 @@ struct SPPMPixelListNode {
 };
 
 SPPM::SPPM(const Json &json) : Integrator(json) {
-  //
+  maxDepth = fetchOptional(json, "maxPathLength", 5);
+  photonsPerIteration = fetchRequired<int>(json, "photonsPerIteration");
+  searchRadius = fetchOptional(json, "searchRadius", 0.005f);
+  iterations = fetchRequired<int>(json, "iterations");
 }
 
 bool ToGrid(Point3f position, const AABB &bounds, int gridRes[3],
@@ -66,8 +69,6 @@ float DistanceSquare(Point3f p1, Point3f p2) {
   return distance * distance;
 }
 
-constexpr float radius = 0.005f;
-
 void SPPM::render(const Camera &camera, const Scene &scene,
                   std::shared_ptr<Sampler> sampler, int spp) const {
   // 1. Sample camera ray, store the visible points in a hash grid
@@ -91,7 +92,7 @@ void SPPM::render(const Camera &camera, const Scene &scene,
   std::unique_ptr<SPPMPixel[]> pixels(new SPPMPixel[nPixels]);
 
   for (int i = 0; i < nPixels; ++i) {
-    pixels[i].radius = radius;
+    pixels[i].radius = searchRadius;
   }
 
   tbb::parallel_for(
@@ -201,59 +202,84 @@ void SPPM::render(const Camera &camera, const Scene &scene,
                       });
   }
 
-  int photonPerIteration = 50000000;
-  //* Trace photons and compute contribution
-  tbb::parallel_for(
-      tbb::blocked_range<size_t>(0, photonPerIteration),
-      [&](const tbb::blocked_range<size_t> &r) {
-        for (int i = r.begin(); i != r.end(); ++i) {
-          float pdfLight;
-          auto light = scene.sampleLight(sampler->next1D(), &pdfLight);
-          if (light && pdfLight != .0f) {
-            float pdfPhotonRay;
-            Ray photonRay;
-            Spectrum Le;
-            Vector3f nLight;
-            light->sampleLe(sampler->next2D(), sampler->next2D(), &photonRay,
-                            &pdfPhotonRay, &Le, &nLight);
-            Spectrum beta = std::abs(dot(photonRay.direction, nLight)) * Le /
-                            (pdfPhotonRay * pdfLight) / PI; // divide pi ??
-            if (beta.isZero())
-              continue;
+  int sum = 0;
 
-            //* ------------------------------
-            //* ----- Photon Random Walk -----
-            //* ------------------------------
+  for (int itr = 0; itr < iterations; ++itr) {
+    //* Trace photons and compute contribution
+    tbb::parallel_for(
+        tbb::blocked_range<size_t>(0, photonsPerIteration),
+        [&](const tbb::blocked_range<size_t> &r) {
+          for (int i = r.begin(); i != r.end(); ++i) {
+            float pdfLight;
+            auto light = scene.sampleLight(sampler->next1D(), &pdfLight);
+            if (light && pdfLight != .0f) {
+              float pdfPhotonRay;
+              Ray photonRay;
+              Spectrum Le;
+              Vector3f nLight;
+              light->sampleLe(sampler->next2D(), sampler->next2D(), &photonRay,
+                              &pdfPhotonRay, &Le, &nLight);
+              Spectrum beta = std::abs(dot(photonRay.direction, nLight)) * Le /
+                              (pdfPhotonRay * pdfLight);
+              if (beta.isZero())
+                continue;
 
-            for (int depth = 0; depth < maxDepth; ++depth) {
-              auto si = scene.rayIntersect(photonRay);
+              //* ------------------------------
+              //* ----- Photon Random Walk -----
+              //* ------------------------------
 
-              //! Just Visualize the hitpoint
-              if (!si)
-                break;
+              for (int depth = 0; depth < maxDepth; ++depth) {
+                auto si = scene.rayIntersect(photonRay);
 
-              int gridCoord[3];
-              if (ToGrid(si->position, vp_bound, gridRes, gridCoord)) {
-                int h =
-                    hash(gridCoord[0], gridCoord[1], gridCoord[2], hashSize);
-                for (auto *node = grid[h].load(std::memory_order_relaxed);
-                     node != nullptr; node = node->next) {
-                  auto pixel = node->pixel;
-                  float radius = pixel->radius;
-                  if (DistanceSquare(pixel->vp.position, si->position) <
-                      radius * radius) {
-                    Spectrum f =
-                        pixel->vp.bsdf->f(pixel->vp.wo, -photonRay.direction);
-                    Spectrum phi = beta * f * pixel->vp.alpha;
-                    pixel->addPhi(phi);
-                    ++(pixel->M);
+                //! Just Visualize the hitpoint
+                if (!si)
+                  break;
+
+                int gridCoord[3];
+                if (ToGrid(si->position, vp_bound, gridRes, gridCoord)) {
+                  int h =
+                      hash(gridCoord[0], gridCoord[1], gridCoord[2], hashSize);
+                  for (auto *node = grid[h].load(std::memory_order_relaxed);
+                       node != nullptr; node = node->next) {
+                    auto pixel = node->pixel;
+                    float radius = pixel->radius;
+                    if (DistanceSquare(pixel->vp.position, si->position) <
+                        radius * radius) {
+                      Spectrum f =
+                          pixel->vp.bsdf->f(pixel->vp.wo, -photonRay.direction);
+                      Spectrum phi = beta * f * pixel->vp.alpha;
+                      pixel->addPhi(phi);
+                      ++(pixel->M);
+                    }
                   }
                 }
+
+                //* Spwan the photon ray
+                auto material = si->shape->material;
+                auto bsdf = material->computeBSDF(*si);
+
+                BSDFSampleResult result =
+                    bsdf->sample(-photonRay.direction, sampler->next2D());
+                beta *= result.weight;
+                if (beta.isZero())
+                  break;
+                photonRay = Ray{si->position, result.wi, 1e-4f, FLT_MAX};
               }
             }
+            if ((++sum % 100) == 0) {
+              printProgress((float)sum / (photonsPerIteration * iterations));
+            }
           }
-        }
-      });
+        });
+
+    //* Update pixel information
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, nPixels),
+                      [&](const tbb::blocked_range<size_t> &r) {
+                        for (int i = r.begin(); i != r.end(); ++i) {
+                        }
+                      });
+  }
+  printProgress(1.f);
 
   //* Reconstruct the image
   tbb::parallel_for(tbb::blocked_range<size_t>(0, nPixels),
@@ -264,8 +290,8 @@ void SPPM::render(const Camera &camera, const Scene &scene,
                         Spectrum L = pixels[i].Ld;
                         L += (pixels[i].M == 0)
                                  ? Spectrum(.0f)
-                                 : (pixels[i].Phi / photonPerIteration /
-                                    (PI * radius * radius));
+                                 : (pixels[i].Phi / photonsPerIteration /
+                                    (PI * searchRadius * searchRadius));
                         camera.film->deposit({x, y}, L, 1.f);
                       }
                     });

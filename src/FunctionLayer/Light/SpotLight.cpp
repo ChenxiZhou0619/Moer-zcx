@@ -1,4 +1,5 @@
 #include "SpotLight.h"
+#include <FunctionLayer/Material/BxDF/Warp.h>
 #include <ResourceLayer/Factory.h>
 
 SpotLight::SpotLight(const Json &json) : Light(json) {
@@ -33,7 +34,12 @@ LightSampleResult SpotLight::sample(const Intersection &shadingPoint,
 void SpotLight::sampleLe(Vector2f u_position, Vector2f u_direction,
                          Ray *photonRay, float *pdf, Spectrum *Le,
                          Vector3f *lightNormal) const { // No implementation now
-  // TODO
+  Vector3f dir = squareToUniformSphere(u_direction);
+  float pdf_dir = squareToUniformSpherePdf(dir);
+  *photonRay = Ray{position, dir, 1e-4f, FLT_MAX};
+  *pdf = pdf_dir;
+  *Le = energy;
+  *lightNormal = dir;
 }
 
 REGISTER_CLASS(SpotLight, "spotLight")
