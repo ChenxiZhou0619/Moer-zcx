@@ -30,6 +30,8 @@ public:
   Point3f boxMin, boxMax; // Bound the volume
 
 private:
+  float scaleSample(nanovdb::Vec3R index, const nanovdb::FloatGrid *grid) const;
+
   nanovdb::GridHandle<BufferT> densityGrid;
   nanovdb::GridHandle<BufferT> temperatureGrid;
 
@@ -39,4 +41,7 @@ private:
   float voxelScale;
   int minIndex[3], maxIndex[3];
   MajorantGrid majorantGrid;
+
+  float sigmaScale;
+  float albedo;
 };

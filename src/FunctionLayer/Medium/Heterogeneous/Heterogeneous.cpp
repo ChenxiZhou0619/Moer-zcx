@@ -16,7 +16,16 @@ void DEBUG(nanovdb::Vec3<double> v) {
 using GridSampler =
     nanovdb::SampleFromVoxels<nanovdb::FloatGrid::TreeType, 1, false>;
 
+float HeterogeneousMedium::scaleSample(nanovdb::Vec3R index,
+                                       const nanovdb::FloatGrid *grid) const {
+
+  return GridSampler(grid->tree())(index) * sigmaScale;
+}
+
 HeterogeneousMedium::HeterogeneousMedium(const Json &json) : Medium(json) {
+  sigmaScale = fetchOptional(json, "sigmaScale", 1.f);
+  albedo = fetchOptional(json, "albedo", 1.f);
+
   std::string filename = fetchRequired<std::string>(json, "file");
   filename = FileUtil::getFullPath(filename);
 
@@ -51,7 +60,7 @@ HeterogeneousMedium::HeterogeneousMedium(const Json &json) : Medium(json) {
   maxIndex[2] = densityFloatGrid->indexBBox().max().z();
 
   //* Init majorant grid
-  int resolution[] = {16, 16, 16};
+  int resolution[] = {32, 32, 32};
   majorantGrid = MajorantGrid(resolution, boxMin, boxMax, voxelScale);
 
   constexpr float delta = 1.f;
@@ -77,8 +86,8 @@ HeterogeneousMedium::HeterogeneousMedium(const Json &json) : Medium(json) {
         for (int nz = voxelMin[2] - delta; nz <= voxelMax[2] + delta; ++nz)
           for (int ny = voxelMin[1] - delta; ny <= voxelMax[1] + delta; ++ny)
             for (int nx = voxelMin[0] - delta; nx <= voxelMax[0] + delta; ++nx)
-              maj = std::max(
-                  maj, GridSampler(densityFloatGrid->tree())({nx, ny, nz}));
+              maj = std::max(maj, scaleSample(nanovdb::Vec3R(nx, ny, nz),
+                                              densityFloatGrid));
         majorantGrid.set(ix, iy, iz, maj);
       }
     }
@@ -115,10 +124,10 @@ bool HeterogeneousMedium::Sample_RegularTracking(Ray ray, float tmax,
 
   // dt in worldSpace
   while (rt.track(index, &dt)) {
-    nanovdb::Vec3<float> voxel_loc(index[0] + .5f, index[1] + .5f,
-                                   index[2] + .5f);
+    nanovdb::Vec3<double> voxel_loc(index[0] + .5f, index[1] + .5f,
+                                    index[2] + .5f);
 
-    float density = GridSampler(densityFloatGrid->tree())(voxel_loc),
+    float density = scaleSample(voxel_loc, densityFloatGrid),
           delta = density * dt;
 
     if (sum + delta >= thick) {
@@ -130,8 +139,8 @@ bool HeterogeneousMedium::Sample_RegularTracking(Ray ray, float tmax,
 
       mits->position = ray.at(t_world);
       mits->mp.phase = phase;
-      mits->mp.sigma_a = Spectrum(.0f); // TODO
-      mits->mp.sigma_s = density;
+      mits->mp.sigma_s = density * albedo;
+      mits->mp.sigma_a = Spectrum(density) - mits->mp.sigma_s;
 
       *Tr = Spectrum(std::exp(-thick));
       *pdf = (*Tr)[0] * density;
@@ -168,9 +177,9 @@ Spectrum HeterogeneousMedium::Transmittance_RegularTracking(Ray ray,
   float dt, thick = .0f;
 
   while (rt.track(index, &dt)) {
-    nanovdb::Vec3<float> voxel_loc(index[0] + .5f, index[1] + .5f,
-                                   index[2] + .5f);
-    float density = GridSampler(densityFloatGrid->tree())(voxel_loc);
+    nanovdb::Vec3<double> voxel_loc(index[0] + .5f, index[1] + .5f,
+                                    index[2] + .5f);
+    float density = scaleSample(voxel_loc, densityFloatGrid);
     thick += density * dt;
   }
   return Spectrum(std::exp(-thick));
@@ -203,13 +212,14 @@ bool HeterogeneousMedium::Sample_MajorantTracking(Ray ray, float tmax,
 
       mits->position = ray.at(t_world);
       mits->mp.phase = phase;
-      mits->mp.sigma_a = Spectrum(.0f); // TODO
 
-      nanovdb::Vec3<float> indexLoc =
-          densityFloatGrid->worldToIndexF(nanovdb::Vec3<float>(
+      nanovdb::Vec3<double> indexLoc =
+          densityFloatGrid->worldToIndexF(nanovdb::Vec3<double>(
               mits->position[0], mits->position[1], mits->position[2]));
-      mits->mp.sigma_s = GridSampler(densityFloatGrid->tree())(indexLoc);
+      float density = scaleSample(indexLoc, densityFloatGrid);
       mits->mp.sigma_maj = maj;
+      mits->mp.sigma_s = density * albedo;
+      mits->mp.sigma_a = Spectrum(density) - mits->mp.sigma_s;
       return true;
     }
 
@@ -239,10 +249,10 @@ Spectrum HeterogeneousMedium::Transmittance_RatioTracking(Ray ray,
       float step = (thick - thick_sum) / maj;
       t_sum += step;
       Point3f position = ray.at(t_sum);
-      nanovdb::Vec3<float> indexLoc = densityFloatGrid->worldToIndexF(
-          nanovdb::Vec3<float>(position[0], position[1], position[2]));
-      float sigma_s = GridSampler(densityFloatGrid->tree())(indexLoc);
-      Tr *= Spectrum(1.f) - sigma_s / maj;
+      nanovdb::Vec3<double> indexLoc = densityFloatGrid->worldToIndexF(
+          nanovdb::Vec3<double>(position[0], position[1], position[2]));
+      float sigma_t = scaleSample(indexLoc, densityFloatGrid);
+      Tr *= Spectrum(1.f) - sigma_t / maj;
 
       // Update
       thick_sum = .0f;

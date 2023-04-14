@@ -7,10 +7,10 @@
 - [X] Transmittance sampling with delta-tracking and transmittance estimation with ratio-tracking
 - [X] MajorantGrid with a DDA-like tracker to accelerate the delta/ratio tracking
 - [X] Path-space filtering
+- [X] Progressive Photon Mapping
 
 ## Todo
-- [ ] Progressive Photon Mapping (代码的bug我找不到)
-  - [ ] 考虑用点光源去做测试
+- [X] Volumetric Progressive Photon Mapping 
 
 ## Other focus
 - [ ] Cuda-accelerated 
