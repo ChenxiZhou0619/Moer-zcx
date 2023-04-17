@@ -3,9 +3,16 @@
 #include "../Phase/IsotropicPhase.h"
 #include <FunctionLayer/Shape/Intersection.h>
 HomogeneousMedium::HomogeneousMedium(const Json &json) : Medium(json) {
-  sigmaA = fetchRequired<Spectrum>(json, "sigmaA");
-  sigmaS = fetchRequired<Spectrum>(json, "sigmaS");
-  sigmaT = sigmaA + sigmaS;
+  if (json.contains("albedo")) {
+    sigmaT = fetchRequired<Spectrum>(json, "density");
+    Spectrum albedo = fetchRequired<Spectrum>(json, "albedo");
+    sigmaS = sigmaT * albedo;
+    sigmaA = sigmaT - sigmaS;
+  } else {
+    sigmaA = fetchRequired<Spectrum>(json, "sigmaA");
+    sigmaS = fetchRequired<Spectrum>(json, "sigmaS");
+    sigmaT = sigmaA + sigmaS;
+  }
 }
 
 bool HomogeneousMedium::Sample_RegularTracking(Ray ray, float tmax,
@@ -35,6 +42,7 @@ bool HomogeneousMedium::Sample_RegularTracking(Ray ray, float tmax,
     *pdf +=
         ((*Tr)[0] * sigmaT[0] + (*Tr)[1] * sigmaT[1] + (*Tr)[2] * sigmaT[2]) /
         3.f;
+
     return true;
   }
 }
