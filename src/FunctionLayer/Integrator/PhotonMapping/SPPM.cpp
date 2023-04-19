@@ -76,12 +76,12 @@ void SPPM::render(const Camera &camera, const Scene &scene,
   // contribution to them
   // 3. Continue iterations
 
-  // TODO Sample visible points
-  // TODO Spatial hash grid
-  // TODO Generate photons and corresponding beta
-  // TODO Gather contribution
-  // TODO Iterations
-  // TODO Finally, reconstruct image
+  // // TODO Sample visible points
+  // // TODO Spatial hash grid
+  // // TODO Generate photons and corresponding beta
+  // // TODO Gather contribution
+  // // TODO Iterations
+  // // TODO Finally, reconstruct image
 
   //! Notice SPPM doesn't support environment map now
 
