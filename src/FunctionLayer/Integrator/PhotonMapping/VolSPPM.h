@@ -21,6 +21,10 @@ public:
                       std::shared_ptr<Sampler> sampler, int spp) const override;
 
 protected:
+  void setRayMedium(Vector3f direction, Vector3f normal,
+                    std::shared_ptr<Material> material, Ray *ray) const;
+
+protected:
   // TODO
   int maxDepth;
   int photonsPerIteration;

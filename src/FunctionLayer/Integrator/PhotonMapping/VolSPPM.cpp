@@ -3,6 +3,12 @@
 #include <FunctionLayer/Material/Material.h>
 #include <atomic>
 #include <tbb/tbb.h>
+void VolSPPM::setRayMedium(Vector3f direction, Vector3f normal,
+                           std::shared_ptr<Material> material, Ray *ray) const {
+  bool towardsInner = dot(direction, normal) < .0f;
+  ray->medium = towardsInner ? material->getMedium() : nullptr;
+}
+
 //* For each pixel each iteration, we store the its corresponding information
 struct VolSPPMPixel {
   Spectrum Phi;           // Flux of current iteration
@@ -26,6 +32,7 @@ struct VolSPPMPixel {
     std::shared_ptr<Phase> phase; // Phase at vp
     Spectrum alpha{.0f};          // Weight of vp to  pixel
     Vector3f wo;                  // Omega_o
+    bool isSurface;               // Whether the vp is on surface
   } vp;
 };
 
@@ -120,13 +127,30 @@ void VolSPPM::render(const Camera &camera, const Scene &scene,
               for (int depth = 0; depth < maxDepth; ++depth) {
                 auto si = scene.rayIntersect(ray);
                 Vector3f wo = -ray.direction;
+
+                //* Sample medium if exists
+                const Medium *medium = ray.medium;
+                MediumIntersection mi;
+                bool mediumInteraction = false;
+
+                if (medium) {
+                  Spectrum Tr;
+                  float pdf, tmax = si ? si->distance : FLT_MAX;
+                  mediumInteraction = medium->Sample_RegularTracking(
+                      ray, tmax, sampler->next2D(), &mi, &Tr, &pdf);
+                  alpha *= Tr / pdf;
+                }
+                if (mediumInteraction) {
+                  alpha *= mi.mp.sigma_s;
+                  pixel->vp = {mi.position, Vector3f(), nullptr, mi.mp.phase,
+                               alpha,       wo,         false};
+                  break;
+                }
+
                 if (!si /* Terminate if escape the scene */) {
                   //* Just break cuz no support for environmentlight
                   break;
                 }
-
-                auto material = si->shape->material;
-                auto bsdf = material->computeBSDF(*si);
 
                 //* Account for emission term
                 if (depth == 0 || specular_bounce) {
@@ -135,10 +159,21 @@ void VolSPPM::render(const Camera &camera, const Scene &scene,
                   }
                 }
 
+                auto material = si->shape->material;
+                auto bsdf = material->computeBSDF(*si);
+
+                //* Skip empty surface
+                if (!bsdf) {
+                  ray = Ray{si->position, ray.direction, 1e-4f, FLT_MAX};
+                  setRayMedium(ray.direction, si->normal, material, &ray);
+                  --depth;
+                  continue;
+                }
+
                 //* If hit the diffuse surface, terminate and record vp
                 if (bsdf->type == BSDFType::Diffuse) {
-                  pixel->vp = {si->position, si->normal, bsdf,
-                               nullptr,      alpha,      wo}; // TODO
+                  pixel->vp = {si->position, si->normal, bsdf, nullptr,
+                               alpha,        wo,         true}; // TODO
                   break;
                 } else /* Hit specular surface */ {
                   BSDFSampleResult result = bsdf->sample(wo, sampler->next2D());
@@ -234,9 +269,66 @@ void VolSPPM::render(const Camera &camera, const Scene &scene,
               for (int depth = 0; depth < maxDepth; ++depth) {
                 auto si = scene.rayIntersect(photonRay);
 
-                //! Just Visualize the hitpoint
+                //* Sample medium if exists
+                const Medium *medium = photonRay.medium;
+                MediumIntersection mi;
+                bool mediumInteraction = false;
+
+                if (medium) {
+                  Spectrum Tr;
+                  float pdf, tmax = si ? si->distance : FLT_MAX;
+                  mediumInteraction = medium->Sample_RegularTracking(
+                      photonRay, tmax, sampler->next2D(), &mi, &Tr, &pdf);
+                  // TODO Beta change
+                }
+
+                if (mediumInteraction) {
+                  int gridCoord[3];
+                  if (VolToGrid(mi.position, vp_bound, gridRes, gridCoord)) {
+                    int h = Volhash(gridCoord[0], gridCoord[1], gridCoord[2],
+                                    hashSize);
+                    for (auto *node = grid[h].load(std::memory_order_relaxed);
+                         node != nullptr; node = node->next) {
+                      auto pixel = node->pixel;
+                      float radius = pixel->radius;
+                      if ((VolDistanceSquare(pixel->vp.position, mi.position) <
+                           radius * radius) &&
+                          !pixel->vp.isSurface) {
+                        Spectrum f = pixel->vp.phase->f(pixel->vp.wo,
+                                                        -photonRay.direction);
+                        Spectrum phi = beta * f;
+                        pixel->addPhi(phi);
+                        ++(pixel->M);
+                      }
+                    }
+                  }
+
+                  //* Sample phase to spwan the ray
+                  PhaseSampleResult result = mi.mp.phase->sample(
+                      -photonRay.direction, sampler->next2D());
+
+                  beta *= result.weight;
+                  if (beta.isZero())
+                    break;
+                  photonRay = Ray{si->position, result.wi, 1e-4f, FLT_MAX};
+                  continue;
+                }
+
                 if (!si)
                   break;
+
+                {
+                  auto material = si->shape->material;
+                  auto bsdf = material->computeBSDF(*si);
+                  if (!bsdf /* Skip the empty surface */) {
+                    photonRay =
+                        Ray{si->position, photonRay.direction, 1e-4f, FLT_MAX};
+                    setRayMedium(photonRay.direction, si->normal, material,
+                                 &photonRay);
+                    --depth;
+                    continue;
+                  }
+                }
 
                 int gridCoord[3];
                 if (VolToGrid(si->position, vp_bound, gridRes, gridCoord)) {
@@ -246,8 +338,9 @@ void VolSPPM::render(const Camera &camera, const Scene &scene,
                        node != nullptr; node = node->next) {
                     auto pixel = node->pixel;
                     float radius = pixel->radius;
-                    if (VolDistanceSquare(pixel->vp.position, si->position) <
-                        radius * radius) {
+                    if ((VolDistanceSquare(pixel->vp.position, si->position) <
+                         radius * radius) &&
+                        pixel->vp.isSurface) {
                       Spectrum f =
                           pixel->vp.bsdf->f(pixel->vp.wo, -photonRay.direction);
                       Spectrum phi = beta * f;
@@ -267,6 +360,8 @@ void VolSPPM::render(const Camera &camera, const Scene &scene,
                 if (beta.isZero())
                   break;
                 photonRay = Ray{si->position, result.wi, 1e-4f, FLT_MAX};
+                setRayMedium(photonRay.direction, si->normal, material,
+                             &photonRay);
               }
             }
             if ((++sum % 100) == 0) {
@@ -301,6 +396,7 @@ void VolSPPM::render(const Camera &camera, const Scene &scene,
             }
             pixel->vp.alpha = .0f;
             pixel->vp.bsdf = nullptr;
+            pixel->vp.phase = nullptr;
           }
         });
   }
