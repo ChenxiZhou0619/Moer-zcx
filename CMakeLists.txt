@@ -50,6 +50,7 @@ add_executable(Moer
   src/FunctionLayer/Integrator/PathSpaceFilter/PathFilter.cpp
 
   src/FunctionLayer/Integrator/PhotonMapping/SPPM.cpp
+  src/FunctionLayer/Integrator/PhotonMapping/VolSPPM.cpp
 
   # Camera
   src/FunctionLayer/Camera/Camera.cpp
