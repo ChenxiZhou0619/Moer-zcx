@@ -104,6 +104,9 @@ bool HeterogeneousMedium::Sample_RegularTracking(Ray ray, float tmax,
   Point3f o = ray.origin;
   Vector3f d = ray.direction;
 
+  o = transform.toLocal(o);
+  d = transform.toLocal(d);
+
   auto o_grid =
            densityFloatGrid->worldToIndexF(nanovdb::Vec3f(o[0], o[1], o[2])),
        d_gird =
@@ -164,6 +167,9 @@ Spectrum HeterogeneousMedium::Transmittance_RegularTracking(Ray ray,
   Point3f o = ray.origin;
   Vector3f d = ray.direction;
 
+  o = transform.toLocal(o);
+  d = transform.toLocal(d);
+
   auto o_grid =
            densityFloatGrid->worldToIndexF(nanovdb::Vec3f(o[0], o[1], o[2])),
        d_gird =
@@ -193,9 +199,12 @@ bool HeterogeneousMedium::Sample_MajorantTracking(Ray ray, float tmax,
   *Tr = Spectrum(1.f);
   *pdf = 1.f;
 
-  Point3f u_coord = majorantGrid.box.UniformCoord(ray.origin);
+  Point3f o_local = transform.toLocal(ray.origin);
+  Vector3f d_local = transform.toLocal(ray.direction);
 
-  MajorantTracker mt = majorantGrid.getTracker(u_coord, ray.direction, tmax);
+  Point3f u_coord = majorantGrid.box.UniformCoord(o_local);
+
+  MajorantTracker mt = majorantGrid.getTracker(u_coord, d_local, tmax);
 
   float thick = -std::log(1 - sample[0]);
 
@@ -210,7 +219,7 @@ bool HeterogeneousMedium::Sample_MajorantTracking(Ray ray, float tmax,
       dt = (thick - sum) / maj;
       t_world += dt;
 
-      mits->position = ray.at(t_world);
+      mits->position = o_local + d_local * t_world;
       mits->mp.phase = phase;
 
       nanovdb::Vec3<double> indexLoc =
@@ -220,6 +229,7 @@ bool HeterogeneousMedium::Sample_MajorantTracking(Ray ray, float tmax,
       mits->mp.sigma_maj = maj;
       mits->mp.sigma_s = density * albedo;
       mits->mp.sigma_a = Spectrum(density) - mits->mp.sigma_s;
+      mits->position = transform.toWorld(mits->position);
       return true;
     }
 
@@ -234,8 +244,11 @@ Spectrum HeterogeneousMedium::Transmittance_RatioTracking(Ray ray,
                                                           float t) const {
   static IndependentSampler sampler;
 
-  Point3f u_coord = majorantGrid.box.UniformCoord(ray.origin);
-  MajorantTracker mt = majorantGrid.getTracker(u_coord, ray.direction, t);
+  Point3f o_local = transform.toLocal(ray.origin);
+  Vector3f d_local = transform.toLocal(ray.direction);
+
+  Point3f u_coord = majorantGrid.box.UniformCoord(o_local);
+  MajorantTracker mt = majorantGrid.getTracker(u_coord, d_local, t);
   Spectrum Tr(1.f);
 
   int index[3], axis;
@@ -248,7 +261,7 @@ Spectrum HeterogeneousMedium::Transmittance_RatioTracking(Ray ray,
     if (thick_sum + delta >= thick) {
       float step = (thick - thick_sum) / maj;
       t_sum += step;
-      Point3f position = ray.at(t_sum);
+      Point3f position = o_local + d_local * t_sum;
       nanovdb::Vec3<double> indexLoc = densityFloatGrid->worldToIndexF(
           nanovdb::Vec3<double>(position[0], position[1], position[2]));
       float sigma_t = scaleSample(indexLoc, densityFloatGrid);

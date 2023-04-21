@@ -28,6 +28,7 @@ public:
 
 public:
   Point3f boxMin, boxMax; // Bound the volume
+  Transform transform;    // Transform of the volume
 
 private:
   float scaleSample(nanovdb::Vec3R index, const nanovdb::FloatGrid *grid) const;

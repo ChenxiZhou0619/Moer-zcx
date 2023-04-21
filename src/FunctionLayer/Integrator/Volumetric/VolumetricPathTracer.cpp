@@ -77,5 +77,5 @@ void VolumetricPathTracer::setRayMedium(Vector3f direction, Vector3f normal,
                                         std::shared_ptr<Material> material,
                                         Ray *ray) const {
   bool towardsInner = dot(direction, normal) < .0f;
-  ray->medium = towardsInner ? material->getMedium() : ray->medium;
+  ray->medium = towardsInner ? material->getMedium() : nullptr;
 }

@@ -11,8 +11,6 @@ public:
   float tmin, tmax;
   float nextCrossingT[3], deltaT[3];
   int step[3], voxelLimit[3], voxel[3];
-
-  int debug = 0;
 };
 
 struct MajorantGrid {

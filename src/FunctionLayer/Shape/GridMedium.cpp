@@ -38,6 +38,8 @@ GridMedium::GridMedium(const Json &json) : Cube(json) {
   min /= min[3], max /= max[3];
   boxMin = Point3f{min[0], min[1], min[2]};
   boxMax = Point3f{max[0], max[1], max[2]};
+
+  grid->transform = transform;
 }
 
 REGISTER_CLASS(GridMedium, "gridMedium")

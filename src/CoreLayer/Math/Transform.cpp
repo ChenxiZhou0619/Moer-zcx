@@ -72,3 +72,16 @@ Point3f Transform::toWorld(const Point3f &point) const {
   v4 /= v4[3];
   return Point3f{v4[0], v4[1], v4[2]};
 }
+
+Vector3f Transform::toLocal(const Vector3f &vector) const {
+  vecmat::vec4f v4{vector[0], vector[1], vector[2], 0};
+  v4 = invScale * invRotate * invTranslate * v4;
+  return Vector3f{v4[0], v4[1], v4[2]};
+}
+
+Point3f Transform::toLocal(const Point3f &point) const {
+  vecmat::vec4f v4{point[0], point[1], point[2], 1};
+  v4 = invScale * invRotate * invTranslate * v4;
+  v4 /= v4[3];
+  return Point3f{v4[0], v4[1], v4[2]};
+}
