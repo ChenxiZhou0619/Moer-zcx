@@ -1,6 +1,6 @@
 {
   "output" : {
-    "filename" : "volpath.exr"
+    "filename" : "pm.exr"
   },
   "sampler" : {
     "type" : "independent",
@@ -24,8 +24,14 @@
     }
   },
   "integrator" : {
-    "type" : "path",
-    "maxPathLength" : 36
+    "type" : "pm",
+    "maxPathLength" : 8,
+
+    "photonsPerIteration" : 5000000,
+    "searchRadius" : 0.01,
+
+    "N" : 10000000,
+    "k" : 128
   },
   "scene" : {
     "shapes" : [
