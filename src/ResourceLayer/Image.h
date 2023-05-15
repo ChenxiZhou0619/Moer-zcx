@@ -23,7 +23,11 @@ public:
     weight = new float[_size[0] * _size[1]]();
   }
 
-  Image(Vector2i _size, float *_data) : size(_size), data(_data) {}
+  Image(Vector2i _size, float *_data) : size(_size), data(_data) {
+    weight = new float[_size[0] * _size[1]]();
+    for (int i = 0; i < size[0] * size[1]; ++i)
+      weight[i] = 1.f;
+  }
 
   ~Image() {
     delete[] data;

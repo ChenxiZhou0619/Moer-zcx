@@ -48,6 +48,7 @@ add_executable(Moer
   src/FunctionLayer/Integrator/PathGraph/Vertex.cpp
 
   src/FunctionLayer/Integrator/PathSpaceFilter/PathFilter.cpp
+  src/FunctionLayer/Integrator/PathSpaceFilter/VolPathFilter.cpp
 
   src/FunctionLayer/Integrator/PhotonMapping/PM.cpp
   src/FunctionLayer/Integrator/PhotonMapping/SPPM.cpp
@@ -107,6 +108,7 @@ target_include_directories(Moer PUBLIC ./src)
 target_include_directories(Moer PUBLIC ./externals/json/include)
 target_include_directories(Moer PUBLIC ./externals/embree/include)
 
+
 if(WIN32)
   set(LIBS_PATH ${PROJECT_SOURCE_DIR}/libs/win)
   set(EMBREE_DLL ${LIBS_PATH}/embree3.dll ${LIBS_PATH}/tbb12.dll)
@@ -150,3 +152,14 @@ if(APPLE)
     set_target_properties(Moer PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
   endif()
 endif()
+
+
+add_executable(PostProcess 
+  src/PostProcess.cpp
+
+  src/ResourceLayer/Image.cpp  
+)
+
+target_include_directories(PostProcess PUBLIC ./src)
+target_include_directories(PostProcess PUBLIC ./externals)
+target_link_libraries(PostProcess PUBLIC tinyexr zlib)
