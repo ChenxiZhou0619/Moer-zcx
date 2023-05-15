@@ -45,6 +45,7 @@ add_executable(Moer
   src/FunctionLayer/Integrator/Volumetric/DeltaTracking.cpp
   
   src/FunctionLayer/Integrator/PathGraph/PathGraph.cpp
+  src/FunctionLayer/Integrator/PathGraph/VolPathGraph.cpp
   src/FunctionLayer/Integrator/PathGraph/Vertex.cpp
 
   src/FunctionLayer/Integrator/PathSpaceFilter/PathFilter.cpp
