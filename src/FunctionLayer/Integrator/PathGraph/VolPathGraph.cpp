@@ -1,6 +1,8 @@
 #include "VolPathGraph.h"
 #include <FunctionLayer/Material/Material.h>
 #include <array>
+#include <nanoflann/nanoflann.hpp>
+#include <stack>
 #include <tbb/tbb.h>
 
 Spectrum VolPathGraph::Transmittance(
@@ -118,11 +120,100 @@ void VolPathGraph::render(const Camera &camera, const Scene &scene,
       });
   printProgress(1);
 
-  for (int i = 0; i < iterations; ++i) {
-    //* Refine the direct incident estimation by filtering
+  auto propagation = [&]() {
+    //* Propagation once
+    tbb::parallel_for(
+        tbb::blocked_range<size_t>(0, width * height),
+        [&](const tbb::blocked_range<size_t> &r) {
+          for (int i = r.begin(); i != r.end(); ++i) {
+            int index = i;
+            //* index = x + y * width
+            int y = i / width, x = i - y * width;
+            for (int j = 0; j < spp; ++j) {
+              if (int idx = fspGroup[i * spp + j]; idx != -1) {
+                VolumeShadingPoint *sp = &group.points[idx];
 
-    //* Refine the indirect incident estimation by propagation
+                std::stack<VolumeShadingPoint *> path;
+
+                while (sp != nullptr) {
+                  path.push(sp);
+                  sp = sp->indirect.xj;
+                }
+
+                while (!path.empty()) {
+                  VolumeShadingPoint *vs = path.top();
+                  path.pop();
+
+                  if (vs->indirect.xj)
+                    vs->indirect.li = vs->indirect.xj->lo;
+
+                  //* Compute lo of vs
+                  Spectrum lo{.0f};
+
+                  // nee
+                  lo += vs->nee.weight * vs->nee.fp * vs->nee.li / vs->nee.pdf;
+                  // phs
+                  lo += vs->phs.weight * vs->phs.fp * vs->phs.li / vs->phs.pdf;
+                  // indirect
+                  if (vs->indirect.xj)
+                    lo += vs->indirect.fp * vs->indirect.li / vs->indirect.pdf;
+
+                  vs->lo = lo;
+                }
+              }
+            }
+          }
+        });
+  };
+
+  using my_kd_tree_t = nanoflann::KDTreeSingleIndexAdaptor<
+      nanoflann::L2_Simple_Adaptor<float, VSPGroup>, VSPGroup, 3 /* dim */
+      >;
+  my_kd_tree_t index(3, group, 32);
+
+  // Compute neighborhoods
+  tbb::parallel_for(
+      tbb::blocked_range<size_t>(0, group.points.size()),
+      [&](const tbb::blocked_range<size_t> &r) {
+        for (int i = r.begin(); i != r.end(); ++i) {
+          auto &p = group.points[i];
+
+          float query_point[3] = {p.position[0], p.position[1], p.position[2]};
+          std::vector<uint32_t> ret_index(knn);
+          std::vector<float> out_dist_sqr(knn);
+
+          size_t num = index.knnSearch(query_point, knn, &ret_index[0],
+                                       &out_dist_sqr[0]);
+          for (int j = 0; j < num; ++j) {
+            p.neighbors.emplace_back(&group.points[ret_index[i]]);
+          }
+
+          //* Compute mis weight for each neighbor
+          for (int j = 0; j < num; ++j) {
+            float nee_rho = .0f;
+            float phs_rho = .0f;
+            float ind_rho = .0f;
+
+            Vector3f nee_wi = p.neighbors[j]->nee.wi,
+                     phs_wi = p.neighbors[j]->phs.wi;
+
+            for (int l = 0; l < num; ++l) {
+              VolumeShadingPoint *neighbor = p.neighbors[l];
+              nee_rho += neighbor->phase->pdf(neighbor->wo, nee_wi);
+              nee_rho += neighbor->phase->pdf(neighbor->wo, nee_wi);
+            }
+          }
+        }
+      });
+
+  for (int i = 0; i < iterations; ++i) {
+    //* update indirect incident estimation by propagation
+    propagation();
+
+    //* Refine the direct incident estimation by filtering
   }
+
+  propagation();
 
   //* Reconstruction the image
   tbb::parallel_for(tbb::blocked_range<size_t>(0, width * height),
@@ -134,8 +225,7 @@ void VolPathGraph::render(const Camera &camera, const Scene &scene,
                         for (int j = 0; j < spp; ++j) {
                           if (int idx = fspGroup[i * spp + j]; idx != -1) {
                             auto sp = group.points[idx];
-                            Spectrum L = sp.nee.li * sp.nee.weight +
-                                         sp.phs.li * sp.phs.weight + sp.lj;
+                            Spectrum L = sp.lo;
                             camera.film->deposit({x, y}, L, 1);
                           }
                         }
@@ -222,7 +312,9 @@ Spectrum VolPathGraph::constructPath(Ray ray, const Scene &scene,
 
           vsp.nee.wi = wi;
           vsp.nee.weight = weight;
-          vsp.nee.li = p * Tr * result.energy / pdf;
+          vsp.nee.fp = p;
+          vsp.nee.pdf = pdf;
+          vsp.nee.li = Tr * result.energy;
         }
         //* Sample phase direct
         {
@@ -242,9 +334,12 @@ Spectrum VolPathGraph::constructPath(Ray ray, const Scene &scene,
                                  ? 1.f
                                  : powerHeuristic(pdf, light->pdf(shadowRay));
               Spectrum energy = light->evaluateEmission(shadowRay);
+
               vsp.phs.wi = wi;
               vsp.phs.weight = weight;
-              vsp.phs.li = p * Tr * energy;
+              vsp.phs.pdf = result.pdf;
+              vsp.phs.fp = phase->f(wo, wi);
+              vsp.phs.li = Tr * energy;
             }
           }
         }
@@ -253,8 +348,9 @@ Spectrum VolPathGraph::constructPath(Ray ray, const Scene &scene,
         ray = Ray{mi.position, result.wi, 1e-4f, FLT_MAX};
         ray.medium = medium;
 
-        vsp.wj = result.wi;
-        vsp.weight_j = result.weight;
+        vsp.indirect.fp = phase->f(wo, result.wi);
+        vsp.indirect.pdf = phase->pdf(wo, result.wi);
+        vsp.indirect.wi = result.wi;
 
         int idx = group->emplace_back(vsp);
         if (depth == 1 /** First shading point */) {
@@ -262,7 +358,7 @@ Spectrum VolPathGraph::constructPath(Ray ray, const Scene &scene,
         }
         if (prevShadingPointIdx != -1) {
           //* Set the prev point to current point if prev exists
-          group->points[prevShadingPointIdx].xj = &group->points[idx];
+          group->points[prevShadingPointIdx].indirect.xj = &group->points[idx];
         }
         prevShadingPointIdx = idx;
       } else if (mode == 2 /** Null collision */) {

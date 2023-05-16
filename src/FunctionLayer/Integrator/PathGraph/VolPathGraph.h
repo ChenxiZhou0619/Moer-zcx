@@ -17,18 +17,33 @@ struct VolumeShadingPoint {
   Point3f position;             // position of shading point
   std::shared_ptr<Phase> phase; // phase function of the shading point
 
+  Vector3f wo;      // direction towards camera
+  Spectrum lo{.0f}; // radiance towards wo
+
   //* Direct lighting properties
-  Vector3f wo; // direction towards camera
   struct DirectLight {
     Vector3f wi;        // direction of direct light
     Spectrum li{.0f};   // incident light on wi
+    Spectrum fp{.0f};   // phase function value
     float weight = .0f; // weight of the edge
-  } nee, phs;           // direct light sample by two distributions
+    float pdf = .0f;
+  } nee, phs; // direct light sample by two distributions
 
-  //* Indirect lighting properties
-  Vector3f wj;
-  VolumeShadingPoint *xj = nullptr;
-  Spectrum lj{.0f}, weight_j{.0f};
+  struct IndirectLight {
+    Vector3f wi;
+    Spectrum li{.0f};
+    Spectrum fp{.0f};
+    float pdf = .0f;
+    VolumeShadingPoint *xj = nullptr;
+  } indirect;
+
+  //* Neighbor
+  std::vector<VolumeShadingPoint *> neighbors;
+  std::vector<float> nee_rho;
+  std::vector<float> phs_rho;
+  std::vector<float> ind_rho;
+
+  Ray shadowRay;
 };
 
 struct VSPGroup {
@@ -65,6 +80,7 @@ public:
 
   VolPathGraph(const Json &json) : Integrator(json) {
     maxPathLength = fetchOptional(json, "maxPathLength", 5);
+    knn = fetchOptional(json, "knn", 8);
   }
 
   virtual ~VolPathGraph() = default;
@@ -95,4 +111,5 @@ private:
 
   int maxPathLength;
   int iterations = 1;
+  int knn;
 };
