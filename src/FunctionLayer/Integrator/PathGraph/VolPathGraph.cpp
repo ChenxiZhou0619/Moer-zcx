@@ -203,14 +203,15 @@ void VolPathGraph::render(const Camera &camera, const Scene &scene,
             for (int l = 0; l < num; ++l) {
               VolumeShadingPoint *neighbor = p.neighbors[l];
               nee_rho += neighbor->phase->pdf(neighbor->wo, nee_wi);
-              nee_rho += scene.infiniteLights[0]->pdf(neighbor->shadowRay_nee);
+              nee_rho +=
+                  scene.infiniteLights[0]->pdf(p.neighbors[j]->shadowRay_nee);
 
               phs_rho += neighbor->phase->pdf(neighbor->wo, phs_wi);
-              phs_rho += scene.infiniteLights[0]->pdf(neighbor->shadowRay_phs);
+              phs_rho +=
+                  scene.infiniteLights[0]->pdf(p.neighbors[j]->shadowRay_phs);
 
               if (neighbor->indirect.xj) {
-                ind_rho +=
-                    neighbor->phase->pdf(neighbor->wo, neighbor->indirect.wi);
+                ind_rho += neighbor->phase->pdf(neighbor->wo, ind_wi);
               }
             }
 
@@ -230,6 +231,8 @@ void VolPathGraph::render(const Camera &camera, const Scene &scene,
           }
         }
       });
+
+  propagation();
 
   for (int i = 0; i < iterations; ++i) {
 
