@@ -171,6 +171,8 @@ void VolPathGraph::render(const Camera &camera, const Scene &scene,
       >;
   my_kd_tree_t index(3, group, 32);
 
+  finished = 0;
+  std::cout << "\n";
   // Compute neighborhoods
   tbb::parallel_for(
       tbb::blocked_range<size_t>(0, group.points.size()),
@@ -185,7 +187,7 @@ void VolPathGraph::render(const Camera &camera, const Scene &scene,
           size_t num = index.knnSearch(query_point, knn, &ret_index[0],
                                        &out_dist_sqr[0]);
           for (int j = 0; j < num; ++j) {
-            p.neighbors.emplace_back(&group.points[ret_index[i]]);
+            p.neighbors.emplace_back(&group.points[ret_index[j]]);
           }
 
           //* Compute mis weight for each neighbor
@@ -195,25 +197,73 @@ void VolPathGraph::render(const Camera &camera, const Scene &scene,
             float ind_rho = .0f;
 
             Vector3f nee_wi = p.neighbors[j]->nee.wi,
-                     phs_wi = p.neighbors[j]->phs.wi;
+                     phs_wi = p.neighbors[j]->phs.wi,
+                     ind_wi = p.neighbors[j]->indirect.wi;
 
             for (int l = 0; l < num; ++l) {
               VolumeShadingPoint *neighbor = p.neighbors[l];
               nee_rho += neighbor->phase->pdf(neighbor->wo, nee_wi);
-              nee_rho += neighbor->phase->pdf(neighbor->wo, nee_wi);
+              nee_rho += scene.infiniteLights[0]->pdf(neighbor->shadowRay_nee);
+
+              phs_rho += neighbor->phase->pdf(neighbor->wo, phs_wi);
+              phs_rho += scene.infiniteLights[0]->pdf(neighbor->shadowRay_phs);
+
+              if (neighbor->indirect.xj) {
+                ind_rho +=
+                    neighbor->phase->pdf(neighbor->wo, neighbor->indirect.wi);
+              }
             }
+
+            p.nee_rho.emplace_back(1.f / nee_rho);
+            p.phs_rho.emplace_back(1.f / phs_rho);
+
+            if (ind_rho > .0f)
+              p.ind_rho.emplace_back(1.f / ind_rho);
+            else {
+              p.ind_rho.emplace_back(.0f);
+            }
+          }
+
+          ++finished;
+          if (finished % 20 == 0) {
+            printProgress((float)finished / group.points.size());
           }
         }
       });
 
   for (int i = 0; i < iterations; ++i) {
-    //* update indirect incident estimation by propagation
+
     propagation();
 
-    //* Refine the direct incident estimation by filtering
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, group.points.size()),
+                      [&](const tbb::blocked_range<size_t> &r) {
+                        for (int i = r.begin(); i != r.end(); ++i) {
+                          Spectrum Lo{.0f};
+                          VolumeShadingPoint *p = &group.points[i];
+                          Vector3f wo = p->wo;
+                          auto phase = p->phase;
+                          //* Refine p->lo
+                          for (int j = 0; j < p->neighbors.size(); ++j) {
+                            VolumeShadingPoint *neighbor = p->neighbors[j];
+                            Lo += phase->f(wo, neighbor->nee.wi) *
+                                  p->nee_rho[j] * neighbor->nee.li;
+                            Lo += phase->f(wo, neighbor->phs.wi) *
+                                  p->phs_rho[j] * neighbor->phs.li;
+                          }
+                          //* Refine lo through indirect
+                          if (p->indirect.xj) {
+                            for (int j = 0; j < p->neighbors.size(); ++j) {
+                              VolumeShadingPoint *neighbor = p->neighbors[j];
+                              if (p->ind_rho[j] > .0f) {
+                                Lo += phase->f(wo, neighbor->indirect.wi) *
+                                      neighbor->indirect.li * p->ind_rho[j];
+                              }
+                            }
+                          }
+                          p->lo = Lo;
+                        }
+                      });
   }
-
-  propagation();
 
   //* Reconstruction the image
   tbb::parallel_for(tbb::blocked_range<size_t>(0, width * height),
@@ -315,6 +365,7 @@ Spectrum VolPathGraph::constructPath(Ray ray, const Scene &scene,
           vsp.nee.fp = p;
           vsp.nee.pdf = pdf;
           vsp.nee.li = Tr * result.energy;
+          vsp.shadowRay_nee = shadwoRay;
         }
         //* Sample phase direct
         {
@@ -340,6 +391,8 @@ Spectrum VolPathGraph::constructPath(Ray ray, const Scene &scene,
               vsp.phs.pdf = result.pdf;
               vsp.phs.fp = phase->f(wo, wi);
               vsp.phs.li = Tr * energy;
+
+              vsp.shadowRay_phs = shadowRay;
             }
           }
         }

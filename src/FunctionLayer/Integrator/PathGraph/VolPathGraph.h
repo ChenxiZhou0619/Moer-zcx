@@ -43,7 +43,8 @@ struct VolumeShadingPoint {
   std::vector<float> phs_rho;
   std::vector<float> ind_rho;
 
-  Ray shadowRay;
+  Ray shadowRay_nee;
+  Ray shadowRay_phs;
 };
 
 struct VSPGroup {
@@ -58,7 +59,7 @@ public:
     return points.size() - 1;
   }
 
-  inline size_t kdtree_get_point_count() { return points.size(); }
+  inline size_t kdtree_get_point_count() const { return points.size(); }
 
   inline float kdtree_get_pt(const size_t idx, const size_t dim) const {
     return points[idx].position[dim];
@@ -81,6 +82,7 @@ public:
   VolPathGraph(const Json &json) : Integrator(json) {
     maxPathLength = fetchOptional(json, "maxPathLength", 5);
     knn = fetchOptional(json, "knn", 8);
+    iterations = fetchOptional(json, "iterations", 1);
   }
 
   virtual ~VolPathGraph() = default;
@@ -110,6 +112,6 @@ private:
       std::function<Spectrum(const Medium *, Ray, float)> tr_tracker) const;
 
   int maxPathLength;
-  int iterations = 1;
+  int iterations;
   int knn;
 };
