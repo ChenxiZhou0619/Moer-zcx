@@ -60,7 +60,7 @@ HeterogeneousMedium::HeterogeneousMedium(const Json &json) : Medium(json) {
   maxIndex[2] = densityFloatGrid->indexBBox().max().z();
 
   //* Init majorant grid
-  int resolution[] = {32, 32, 32};
+  int resolution[] = {64, 64, 64};
   majorantGrid = MajorantGrid(resolution, boxMin, boxMax, voxelScale);
 
   constexpr float delta = 1.f;
@@ -83,12 +83,19 @@ HeterogeneousMedium::HeterogeneousMedium(const Json &json) : Medium(json) {
         nanovdb::Vec3<float> voxelMax = densityFloatGrid->worldToIndexF(
             nanovdb::Vec3<float>(vmax[0], vmax[1], vmax[2]));
         float maj = .0f;
+        float min = FLT_MAX;
         for (int nz = voxelMin[2] - delta; nz <= voxelMax[2] + delta; ++nz)
           for (int ny = voxelMin[1] - delta; ny <= voxelMax[1] + delta; ++ny)
-            for (int nx = voxelMin[0] - delta; nx <= voxelMax[0] + delta; ++nx)
+            for (int nx = voxelMin[0] - delta; nx <= voxelMax[0] + delta;
+                 ++nx) {
               maj = std::max(maj, scaleSample(nanovdb::Vec3R(nx, ny, nz),
                                               densityFloatGrid));
+              min = std::min(min, scaleSample(nanovdb::Vec3R(nx, ny, nz),
+                                              densityFloatGrid));
+            }
         majorantGrid.set(ix, iy, iz, maj);
+        majorantGrid.setMin(ix, iy, iz, min);
+        //        std::cout << maj << "---" << min << std::endl;
       }
     }
   }
@@ -284,6 +291,77 @@ Spectrum HeterogeneousMedium::Transmittance_RatioTracking(Ray ray,
   }
 
   return Tr;
+}
+
+Spectrum
+HeterogeneousMedium::Transmittance_ResidualRatioTracking(Ray ray,
+                                                         float t) const {
+  //  const static float sqrt3 = std::sqrt(3.f) * majorantGrid.voxelScale;
+  static IndependentSampler sampler;
+
+  Point3f o_local = transform.toLocal(ray.origin);
+  Vector3f d_local = transform.toLocal(ray.direction);
+
+  Point3f u_coord = majorantGrid.box.UniformCoord(o_local);
+  MajorantTracker mt = majorantGrid.getTracker(u_coord, d_local, t);
+
+  float control_sum = .0f;
+  float residualTr = 1.f;
+
+  int index[3], axis;
+  float dt, t_sum = .0f;
+
+  float thick = -std::log(1 - sampler.next1D());
+  float thick_sum = .0f;
+
+  bool newVoxel = true;
+  while (mt.track(index, &dt, &axis)) {
+
+    float maj = majorantGrid.at(index[0], index[1], index[2]);
+    float min = majorantGrid.atMin(index[0], index[1], index[2]);
+
+    // float mu_c = (maj + min) * 0.5f;
+    // float mu_r = 0.5f * (maj - min);
+
+    float mu_c = min + 0.20f * (maj - min);
+    float mu_r = 0.80f * (maj - min);
+
+    // float mu_r = maj - min, mu_c = min + mu_r * (std::pow(2, 1.f / sqrt3) -
+    // 1);
+
+    if (newVoxel)
+      control_sum -= mu_c * dt;
+
+    float delta = mu_r * dt;
+
+    if (thick_sum + delta >= thick) {
+      float step = (thick - thick_sum) / mu_r;
+      t_sum += step;
+
+      Point3f position = o_local + d_local * t_sum;
+      nanovdb::Vec3<double> indexLoc = densityFloatGrid->worldToIndexF(
+          nanovdb::Vec3<double>(position[0], position[1], position[2]));
+      float sigma_t = scaleSample(indexLoc, densityFloatGrid);
+      residualTr *= (1 - (sigma_t - mu_c) / mu_r);
+      // Update
+      thick_sum = .0f;
+      thick = -std::log(1 - sampler.next1D());
+      mt.terminate = false;
+      mt.voxel[0] = index[0];
+      mt.voxel[1] = index[1];
+      mt.voxel[2] = index[2];
+      mt.tmin = mt.tmin - dt + step;
+      mt.nextCrossingT[axis] -= mt.deltaT[axis];
+      newVoxel = false;
+      continue;
+    }
+
+    t_sum += dt;
+    thick_sum += delta;
+    newVoxel = true;
+  }
+
+  return residualTr * std::exp(control_sum);
 }
 
 REGISTER_CLASS(HeterogeneousMedium, "heterogeneous")

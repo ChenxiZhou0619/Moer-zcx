@@ -26,6 +26,9 @@ public:
 
   virtual Spectrum Transmittance_RatioTracking(Ray ray, float t) const override;
 
+  virtual Spectrum Transmittance_ResidualRatioTracking(Ray ray,
+                                                       float t) const override;
+
 public:
   Point3f boxMin, boxMax; // Bound the volume
   Transform transform;    // Transform of the volume

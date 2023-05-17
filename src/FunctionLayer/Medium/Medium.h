@@ -25,7 +25,17 @@ public:
                                        MediumIntersection *mits, Spectrum *Tr,
                                        float *pdf) const = 0;
 
+  virtual bool Sample_WeightedMajorant(Ray ray, float tmax, Vector2f sample,
+                                       MediumIntersection *mits, Spectrum *Tr,
+                                       float *pdf) const {
+    // No implementation
+  }
+
   virtual Spectrum Transmittance_RatioTracking(Ray ray, float t) const = 0;
+
+  virtual Spectrum Transmittance_ResidualRatioTracking(Ray ray, float t) const {
+    // No implementation
+  }
 
 public:
   std::shared_ptr<Phase> phase;

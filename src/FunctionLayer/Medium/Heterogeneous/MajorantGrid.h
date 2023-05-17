@@ -25,6 +25,8 @@ public:
     resulotion[2] = _resolution[2];
     majorantVoxel =
         std::vector<float>(resulotion[0] * resulotion[1] * resulotion[2]);
+    minimumVoxel =
+        std::vector<float>(resulotion[0] * resulotion[1] * resulotion[2]);
     voxelSize[0] = (boxMax[0] - boxMin[0]) / resulotion[0];
     voxelSize[1] = (boxMax[1] - boxMin[1]) / resulotion[1];
     voxelSize[2] = (boxMax[2] - boxMin[2]) / resulotion[2];
@@ -40,6 +42,16 @@ public:
     majorantVoxel[offset] = val;
   }
 
+  float atMin(int x, int y, int z) const {
+    int offset = x + y * resulotion[0] + z * resulotion[1] * resulotion[0];
+    return minimumVoxel[offset];
+  }
+
+  void setMin(int x, int y, int z, float val) {
+    int offset = x + y * resulotion[0] + z * resulotion[1] * resulotion[0];
+    minimumVoxel[offset] = val;
+  }
+
   MajorantTracker getTracker(Point3f origin_u, Vector3f dir_u,
                              float t_grid) const;
 
@@ -48,4 +60,5 @@ public:
   int resulotion[3];
   float voxelSize[3], voxelScale;
   std::vector<float> majorantVoxel;
+  std::vector<float> minimumVoxel;
 };
