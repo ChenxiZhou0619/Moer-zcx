@@ -75,7 +75,7 @@ std::shared_ptr<Image> filter(std::shared_ptr<Image> image) {
   return filtered;
 }
 
-int main(int argc, char **argv) {
+int main1(int argc, char **argv) {
   if (argv[1] == nullptr) {
     printf("Image should be provided!\n");
     exit(1);
@@ -97,4 +97,35 @@ int main(int argc, char **argv) {
 
   //*----- Save Output -----
   saveImage(res, image_after_filter, true);
+}
+
+int main(int argc, char **argv) {
+  if (argv[1] == nullptr) {
+    printf("Image should be provided!\n");
+    exit(1);
+  }
+  //*----- Load Image -----
+  auto image = loadImage(argv[1]);
+
+  //*----- Load ref -----
+  auto ref = loadImage("/home/zcx/Programming/Moer-zcx/examples/MediumCloud/"
+                       "result/reference-medium-1024.exr");
+
+  int x = ref->size[0], y = ref->size[1];
+
+  float bias = .0f;
+
+  for (int i = 0; i < x; ++i) {
+    for (int j = 0; j < y; ++j) {
+      Vector3f f = image->getValue({i, j});
+      Vector3f rf = ref->getValue({i, j});
+      for (int k = 0; k < 3; ++k)
+        bias += std::pow(f[k] - rf[k], 2.f);
+    }
+  }
+
+  bias /= x * y * 3;
+  bias = std::sqrt(bias);
+
+  std::cout << "RMSE = " << bias << "\n";
 }

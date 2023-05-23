@@ -24,6 +24,10 @@ public:
                                        MediumIntersection *mits, Spectrum *Tr,
                                        float *pdf) const override;
 
+  virtual bool Sample_WeightedMajorant(Ray ray, float tmax, Vector2f sample,
+                                       MediumIntersection *mits, Spectrum *Tr,
+                                       float *pdf) const override;
+
   virtual Spectrum Transmittance_RatioTracking(Ray ray, float t) const override;
 
   virtual Spectrum Transmittance_ResidualRatioTracking(Ray ray,

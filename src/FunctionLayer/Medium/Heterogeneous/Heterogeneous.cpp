@@ -364,4 +364,57 @@ HeterogeneousMedium::Transmittance_ResidualRatioTracking(Ray ray,
   return residualTr * std::exp(control_sum);
 }
 
+bool HeterogeneousMedium::Sample_WeightedMajorant(Ray ray, float tmax,
+                                                  Vector2f sample,
+                                                  MediumIntersection *mits,
+                                                  Spectrum *Tr,
+                                                  float *pdf) const {
+  // sigma_maj = k * sigma_maj
+  constexpr static float k = 0.7f;
+
+  *Tr = Spectrum(1.f);
+  *pdf = 1.f;
+
+  Point3f o_local = transform.toLocal(ray.origin);
+  Vector3f d_local = transform.toLocal(ray.direction);
+
+  Point3f u_coord = majorantGrid.box.UniformCoord(o_local);
+
+  MajorantTracker mt = majorantGrid.getTracker(u_coord, d_local, tmax);
+
+  float thick = -std::log(1 - sample[0]);
+
+  int index[3];
+  float dt, sum = .0f;
+  float t_world = .0f;
+
+  while (mt.track(index, &dt)) {
+    float maj = k * majorantGrid.at(index[0], index[1], index[2]),
+          delta = maj * dt;
+
+    if (sum + delta >= thick) {
+      dt = (thick - sum) / maj;
+      t_world += dt;
+
+      mits->position = o_local + d_local * t_world;
+      mits->mp.phase = phase;
+
+      nanovdb::Vec3<double> indexLoc =
+          densityFloatGrid->worldToIndexF(nanovdb::Vec3<double>(
+              mits->position[0], mits->position[1], mits->position[2]));
+      float density = scaleSample(indexLoc, densityFloatGrid);
+      mits->mp.sigma_maj = maj;
+      mits->mp.sigma_s = density * albedo;
+      mits->mp.sigma_a = Spectrum(density) - mits->mp.sigma_s;
+      mits->position = transform.toWorld(mits->position);
+      return true;
+    }
+
+    t_world += dt;
+    sum += delta;
+  }
+
+  return false;
+}
+
 REGISTER_CLASS(HeterogeneousMedium, "heterogeneous")

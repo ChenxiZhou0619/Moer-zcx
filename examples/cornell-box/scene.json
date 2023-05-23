@@ -125,7 +125,7 @@
     "lights" : [
       {
         "type" : "areaLight",
-        "energy" : [28, 25, 16],
+        "energy" : [40, 40, 40],
         "shape" : {
           "type" : "parallelogram",
           "base" : [-0.3, 1.99999, -0.3],

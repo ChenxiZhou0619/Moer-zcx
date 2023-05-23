@@ -13,11 +13,8 @@ Spectrum WeightedDeltaTracking::li(const Ray &_ray, const Scene &scene,
   };
 
   auto sample_mode = [](float sigma_a, float sigma_s, float sigma_n,
-                        float uMode, float *weight) {
-    //* weight = sigma_x / (sigma_maj * P_x)
-    float sigma_maj = sigma_a + sigma_s + sigma_n;
-    // TODO
-    float P_a; //
+                        float uMode) {
+    uMode *= (sigma_a + sigma_s + sigma_n);
     if (uMode < sigma_a)
       return 0; // Absorb
     else if (uMode < sigma_a + sigma_s)
@@ -41,9 +38,11 @@ Spectrum WeightedDeltaTracking::li(const Ray &_ray, const Scene &scene,
     if (medium) {
       Spectrum Tr;
       float pdf, tmax = si ? si->distance : FLT_MAX;
+      //       mediumInteraction = medium->Sample_WeightedMajorant(
+      //           ray, tmax, sampler->next2D(), &mi, &Tr, &pdf);
+      //       beta *= Tr / pdf; //! Notice, Tr/pdf always 1
       mediumInteraction = medium->Sample_MajorantTracking(
           ray, tmax, sampler->next2D(), &mi, &Tr, &pdf);
-      beta *= Tr / pdf; //! Notice, Tr/pdf always 1
     }
 
     if (mediumInteraction) {
@@ -53,8 +52,9 @@ Spectrum WeightedDeltaTracking::li(const Ray &_ray, const Scene &scene,
 
       auto phase = mi.mp.phase;
       // TODO handle chromatic medium
+      //! sigma_n might be negative
       float sigma_a = mi.mp.sigma_a[0], sigma_s = mi.mp.sigma_s[0],
-            sigma_n = std::max(.0f, mi.mp.sigma_maj[0] - sigma_a - sigma_s);
+            sigma_n = mi.mp.sigma_maj[0] - sigma_a - sigma_s;
 
       int mode = sample_mode(sigma_a, sigma_s, sigma_n, sampler->next1D());
 
