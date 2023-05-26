@@ -10,7 +10,9 @@
 - [X] Progressive Photon Mapping
 
 ## Todo
-- [X] Volumetric Progressive Photon Mapping 
+- [ ] BSDFs
+- [ ] BDPT
+- [ ] MLT
 
 ## Other focus
 - [ ] Cuda-accelerated 

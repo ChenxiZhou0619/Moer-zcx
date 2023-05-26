@@ -76,6 +76,7 @@ add_executable(Moer
   # Texture
   src/FunctionLayer/Texture/NormalTexture.cpp
   src/FunctionLayer/Texture/ImageTexture.cpp
+  src/FunctionLayer/Texture/CheckboardTexture.cpp
   src/FunctionLayer/Texture/Texture.cpp
   src/FunctionLayer/Texture/Mipmap.cpp
 
