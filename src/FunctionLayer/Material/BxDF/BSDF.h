@@ -39,3 +39,10 @@ protected:
     return local[0] * tangent + local[1] * normal + local[2] * bitangent;
   }
 };
+
+inline Vector3f Reflect(Vector3f w, Vector3f normal) {
+  // assume v is the reflected normal
+  // v + w = 2 * cos_v * normal
+  float cos = dot(w, normal);
+  return normalize(2 * cos * normal - w);
+}
