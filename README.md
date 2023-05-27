@@ -13,6 +13,7 @@
 - [ ] BSDFs
 - [ ] BDPT
 - [ ] MLT
+- [ ] BSSRDF
 
 ## Other focus
 - [ ] Cuda-accelerated 

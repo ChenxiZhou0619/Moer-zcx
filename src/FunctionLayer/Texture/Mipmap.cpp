@@ -31,10 +31,10 @@ std::shared_ptr<Image> resizeHalf(std::shared_ptr<Image> origin) {
 
 MipMap::MipMap(std::shared_ptr<Image> origin) {
   Vector2i size = origin->size;
-  if (!isPowerOf2(size[0])) {
-    std::cerr << "目前只支持对长宽为2的次幂的图片做mipmap\n";
-    exit(1);
-  }
+  // if (!isPowerOf2(size[0])) {
+  //   std::cerr << "目前只支持对长宽为2的次幂的图片做mipmap\n";
+  //   exit(1);
+  // }
   int nLevels = 1 + log2Int(std::max(size[0], size[1]));
   pyramid.reserve(nLevels);
   pyramid.emplace_back(origin);
