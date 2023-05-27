@@ -87,6 +87,7 @@ add_executable(Moer
   src/FunctionLayer/Material/Glass.cpp
   src/FunctionLayer/Material/Material.cpp
   src/FunctionLayer/Material/RoughConductor.cpp
+  src/FunctionLayer/Material/Plastic.cpp
 
 
   # Medium

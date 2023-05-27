@@ -46,3 +46,9 @@ inline Vector3f Reflect(Vector3f w, Vector3f normal) {
   float cos = dot(w, normal);
   return normalize(2 * cos * normal - w);
 }
+
+inline float FresnelSchlick(Vector3f wo, float eta) {
+  float R0 = (1.f - eta) / (1.f + eta);
+  R0 *= R0;
+  return R0 + (1 - R0) * std::pow(1 - wo[1], 5);
+}
