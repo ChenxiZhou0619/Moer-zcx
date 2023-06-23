@@ -1,8 +1,65 @@
 #include "Integrator.h"
-
 #include <tbb/tbb.h>
 
 #define MULTITHREAD
+
+Spectrum Integrator::sampleDirect(const Scene &scene, const Intersection &its,
+                                  Vector3f wo, std::shared_ptr<BSDF> bsdf,
+                                  std::shared_ptr<Sampler> sampler) const {
+  Spectrum Ld{.0f};
+
+  // Sample Le
+  auto sampleLd = [&](std::shared_ptr<Light> light, Vector2f u2,
+                      float pdfLight = 1.f) {
+    auto result = light->sample(its, u2);
+    Vector3f wi = result.direction;
+    Ray shadowRay{its.position, wi, 1e-4f, result.distance};
+
+    if (auto occlusion = scene.rayIntersect(shadowRay); !occlusion) {
+      Spectrum f = bsdf->f(wo, wi);
+      float pdf = convertPDF(result, its) * pdfLight;
+      float misw =
+          result.isDelta ? 1.f : powerHeuristic(pdf, bsdf->pdf(wo, wi));
+      if (!f.isZero() && pdf != .0f)
+        return misw * result.energy * f / pdf;
+    }
+    return Spectrum{.0f};
+  };
+  /** ----- Infinite Lights ----- */
+  for (auto light : scene.infiniteLights) {
+    Ld += sampleLd(light, sampler->next2D(), 1.f);
+  }
+  /** ----- Surface Lights ----- */
+  float pdfLight = .0f;
+  auto light = scene.sampleLight(sampler->next1D(), &pdfLight);
+  if (light && pdfLight != .0f)
+    sampleLd(light, sampler->next2D(), pdfLight);
+
+  // Sample bsdf
+  auto result = bsdf->sample(wo, sampler->next2D());
+  Ray shadowRay{its.position, result.wi, 1e-4f, FLT_MAX};
+  auto occlusion = scene.rayIntersect(shadowRay);
+
+  if (!occlusion) {
+    for (auto light : scene.infiniteLights) {
+      float pdfLe = light->pdf(shadowRay);
+      float misw = (result.type == BSDFType::Specular)
+                       ? 1.f
+                       : powerHeuristic(result.pdf, pdfLe);
+      Ld += result.weight * misw * light->evaluateEmission(shadowRay);
+    }
+  } else if (auto light = occlusion->shape->light; light) {
+    float pdfLight = scene.pdf(light);
+    float pdfLe = pdfLight * light->pdf(shadowRay, *occlusion);
+    float misw = (result.type == BSDFType::Specular)
+                     ? 1.f
+                     : powerHeuristic(result.pdf, pdfLe);
+    Ld +=
+        result.weight * misw * light->evaluateEmission(*occlusion, -result.wi);
+  }
+
+  return Ld;
+}
 
 void PixelIntegrator::render(const Camera &camera, const Scene &scene,
                              std::shared_ptr<Sampler> sampler, int spp) const {

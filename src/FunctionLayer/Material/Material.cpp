@@ -1,5 +1,10 @@
 #include "Material.h"
 
+std::shared_ptr<BSSRDF>
+Material::computeBSSRDF(const Intersection &intersection) const {
+  return bssrdf;
+}
+
 const Medium *Material::getMedium() const {
   if (medium)
     return medium.get();

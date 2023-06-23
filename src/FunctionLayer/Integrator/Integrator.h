@@ -1,6 +1,7 @@
 #pragma once
 #include <CoreLayer/ColorSpace/Spectrum.h>
 #include <FunctionLayer/Camera/Camera.h>
+#include <FunctionLayer/Material/Material.h>
 #include <FunctionLayer/Ray/Ray.h>
 #include <FunctionLayer/Sampler/Sampler.h>
 #include <FunctionLayer/Scene/Scene.h>
@@ -34,6 +35,11 @@ public:
 
 public:
   const Medium *medium = nullptr;
+
+protected:
+  virtual Spectrum sampleDirect(const Scene &scene, const Intersection &its,
+                                Vector3f wo, std::shared_ptr<BSDF> bsdf,
+                                std::shared_ptr<Sampler> sampler) const;
 };
 
 class PixelIntegrator : public Integrator {

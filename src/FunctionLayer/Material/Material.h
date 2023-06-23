@@ -1,4 +1,5 @@
 #pragma once
+#include "./BSSRDF/BSSRDF.h"
 #include "./BxDF/BSDF.h"
 #include <CoreLayer/Math/Math.h>
 #include <FunctionLayer/Medium/Medium.h>
@@ -17,6 +18,7 @@ public:
       normalMap = std::make_shared<NormalTexture>(json["normalmap"]);
     if (json.contains("medium"))
       medium = Factory::construct_class<Medium>(json["medium"]);
+    // TODO set bssrdf
   }
 
   virtual std::shared_ptr<BSDF>
@@ -26,6 +28,8 @@ public:
                               Vector3f *normal, Vector3f *tangent,
                               Vector3f *bitangent) const;
 
+  std::shared_ptr<BSSRDF> computeBSSRDF(const Intersection &intersection) const;
+
   const Medium *getMedium() const;
 
   void setMedium(std::shared_ptr<Medium> medium);
@@ -33,4 +37,5 @@ public:
 protected:
   std::shared_ptr<NormalTexture> normalMap;
   std::shared_ptr<Medium> medium;
+  std::shared_ptr<BSSRDF> bssrdf;
 };

@@ -5,103 +5,41 @@
 
 Spectrum PathIntegrator::li(const Ray &_ray, const Scene &scene,
                             std::shared_ptr<Sampler> sampler) const {
-  Spectrum spectrum(.0f), beta(1.f);
+  Spectrum Li(.0f), beta(1.f);
   Ray ray(_ray);
-  int pathLength = 0;
+  int bounces = 0;
 
-  float pdfPrev;
-  bool isDeltaPrev = true;
-
-  do {
+  while (true) {
     auto itsOpt = scene.rayIntersect(ray);
 
-    if (!itsOpt.has_value()) {
-      for (auto light : scene.infiniteLights) {
-        float pdf = light->pdf(ray);
-        float misw = isDeltaPrev ? 1.f : powerHeuristic(pdfPrev, pdf);
-        spectrum += beta * misw * light->evaluateEmission(ray);
-      }
-      break; // Break due to escaping the scene
+    if (bounces == 0) {
+      if (!itsOpt)
+        for (auto light : scene.infiniteLights)
+          Li += beta * light->evaluateEmission(ray);
+      else if (auto light = itsOpt->shape->light; light)
+        Li += beta * light->evaluateEmission(*itsOpt, -ray.direction);
     }
 
-    Intersection its = itsOpt.value();
-    if (auto light = its.shape->light; light) {
-      float pdf = light->pdf(ray, its);
-      pdf *= scene.pdf(light);
-      float misw = isDeltaPrev ? 1.f : powerHeuristic(pdfPrev, pdf);
-      spectrum += beta * misw * light->evaluateEmission(its, -ray.direction);
-    }
-
-    if (pathLength >= maxPathLength)
+    if (!itsOpt || maxPathLength == 0)
       break;
 
-    if (pathLength > rrThresholdLength && beta.maxComponent() < rrThreshold) {
-      float q = std::max(1.f - beta.maxComponent(), .05f);
-      if (sampler->next1D() < q)
-        break;
-      beta /= 1 - q;
-    }
+    auto bsdf = itsOpt->shape->material->computeBSDF(*itsOpt);
 
-    computeRayDifferentials(&its, ray);
-    auto bsdf = its.shape->material->computeBSDF(its);
+    // Sample direct light
+    Li += beta * sampleDirect(scene, *itsOpt, -ray.direction, bsdf, sampler);
 
-    // If hit the empty surface
-    if (!bsdf) {
-      ray = Ray(its.position, ray.direction);
-      continue;
-    }
-
-    // Sample the InfiniteLights
-    for (auto light : scene.infiniteLights) {
-      auto lightSampleResult = light->sample(its, sampler->next2D());
-      Ray shadowRay(its.position, lightSampleResult.direction, 1e-4f,
-                    lightSampleResult.distance);
-      if (auto occlude = scene.rayIntersect(shadowRay); !occlude.has_value()) {
-        Spectrum f = bsdf->f(-ray.direction, shadowRay.direction);
-        float pdf = convertPDF(lightSampleResult, its);
-        float misw = lightSampleResult.isDelta
-                         ? 1.f
-                         : powerHeuristic(pdf, bsdf->pdf(-ray.direction,
-                                                         shadowRay.direction));
-        if (!f.isZero() && pdf != .0f)
-          spectrum += beta * misw * lightSampleResult.energy * f / pdf;
-      }
-    }
-
-    // Sample the lights in scene
-    float pdfLight = .0f;
-    auto light = scene.sampleLight(sampler->next1D(), &pdfLight);
-    if (light && pdfLight != .0f) {
-      auto lightSampleResult = light->sample(its, sampler->next2D());
-      Ray shadowRay(its.position, lightSampleResult.direction, 1e-4f,
-                    lightSampleResult.distance);
-      if (auto occlude = scene.rayIntersect(shadowRay); !occlude.has_value()) {
-        Spectrum f = bsdf->f(-ray.direction, shadowRay.direction);
-        lightSampleResult.pdf *= pdfLight;
-        float pdf = convertPDF(lightSampleResult, its);
-        float misw = lightSampleResult.isDelta
-                         ? 1.f
-                         : powerHeuristic(pdf, bsdf->pdf(-ray.direction,
-                                                         shadowRay.direction));
-        if (!f.isZero() && pdf != .0f)
-          spectrum += beta * misw * lightSampleResult.energy * f / pdf;
-      }
-    }
-
-    // Sample the bsdf to spwan the ray
+    // Sample a direction according to bsdf to spwan the ray
     auto bsdfSampleResult = bsdf->sample(-ray.direction, sampler->next2D());
     beta *= bsdfSampleResult.weight;
-    if (beta.isZero())
+
+    bool isTransmission = dot(bsdfSampleResult.wi, itsOpt->normal) < .0f;
+    // TODO consider the bssrdf
+    if (beta.isZero() || ++bounces >= maxPathLength)
       break;
-    ray = Ray(its.position, bsdfSampleResult.wi, 1e-4f, FLT_MAX);
 
-    isDeltaPrev = bsdfSampleResult.type == BSDFType::Specular;
-    pdfPrev = bsdfSampleResult.pdf;
-    ++pathLength;
-
-  } while (1);
-
-  return spectrum;
+    ray = Ray{itsOpt->position, bsdfSampleResult.wi, 1e-4f, FLT_MAX};
+  }
+  return Li;
 }
 
 REGISTER_CLASS(PathIntegrator, "path")
