@@ -165,6 +165,46 @@ add_executable(PostProcess
   src/ResourceLayer/Image.cpp  
 )
 
+
+add_executable(
+  Simulator
+
+  src/simulator.cpp
+
+  src/CoreLayer/Math/Transform.cpp
+
+  src/FunctionLayer/Material/Matte.cpp
+  src/FunctionLayer/Material/Material.cpp
+
+  src/FunctionLayer/Acceleration/AABB.cpp
+  src/FunctionLayer/Acceleration/EmbreeBVH.cpp
+
+  src/FunctionLayer/Shape/Shape.cpp
+  src/FunctionLayer/Shape/Triangle.cpp
+  src/FunctionLayer/Shape/Cube.cpp
+  src/FunctionLayer/Shape/Sphere.cpp
+  src/FunctionLayer/Shape/Parallelogram.cpp
+
+  src/FunctionLayer/Sampler/IndependentSampler.cpp
+
+  src/FunctionLayer/Texture/NormalTexture.cpp
+  src/FunctionLayer/Texture/ImageTexture.cpp
+  src/FunctionLayer/Texture/CheckboardTexture.cpp
+  src/FunctionLayer/Texture/Texture.cpp
+  src/FunctionLayer/Texture/Mipmap.cpp
+
+  src/ResourceLayer/FileUtil.cpp
+  src/ResourceLayer/FileUtil.cpp
+  src/ResourceLayer/Mesh.cpp
+  src/ResourceLayer/Image.cpp
+)
+target_include_directories(Simulator PUBLIC ./externals)
+target_include_directories(Simulator PUBLIC ./src)
+target_include_directories(Simulator PUBLIC ./externals/json/include)
+target_include_directories(Simulator PUBLIC ./externals/embree/include)
+
+target_link_libraries(Simulator PUBLIC tbb embree3 tinyobjloader tinyexr zlib)
+
 target_include_directories(PostProcess PUBLIC ./src)
 target_include_directories(PostProcess PUBLIC ./externals)
 target_link_libraries(PostProcess PUBLIC tinyexr zlib)

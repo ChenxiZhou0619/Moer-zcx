@@ -27,6 +27,7 @@ RTCGeometry Triangle::getEmbreeGeometry(RTCDevice device) const {
     indexBuffer[i * 3 + 2] = mesh->faceBuffer[i][2].vertexIndex;
   }
   rtcCommitGeometry(geometry);
+
   return geometry;
 }
 
